@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="screen-orientation" content="portrait">
     <title>Harmony - Guitar Improvisation Guide</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -25,58 +24,119 @@
             </div>
         </header>
         
-        <main>
-            <section class="session-panel">
-                <h2>Sesion</h2>
-                <div class="session-controls">
-                    <input type="text" id="sessionName" placeholder="Nombre de la sesion" value="Practice">
-                    <button id="newSessionBtn">Nueva Sesion</button>
-                </div>
-                
-                <div class="items-section">
-                    <h3>Acordes y Escalas</h3>
-                    <div class="add-item">
-                        <select id="itemType">
-                            <option value="CHORD">Acorde</option>
-                            <option value="SCALE">Escala</option>
-                        </select>
-                        <select id="itemReference"></select>
-                        <select id="itemRoot"></select>
-                        <button id="addItemBtn">Agregar</button>
+        <!-- Tab Navigation -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="fretboard">Diapason</button>
+            <button class="tab-btn" data-tab="song-builder">Song Builder</button>
+        </nav>
+        
+        <!-- Fretboard Tab -->
+        <div id="tab-fretboard" class="tab-content active">
+            <main>
+                <section class="session-panel">
+                    <h2>Sesion</h2>
+                    <div class="session-controls">
+                        <input type="text" id="sessionName" placeholder="Nombre de la sesion" value="Practice">
+                        <button id="newSessionBtn">Nueva Sesion</button>
                     </div>
                     
-                    <ul id="itemsList" class="items-list"></ul>
+                    <div class="items-section">
+                        <h3>Acordes y Escalas</h3>
+                        <div class="add-item">
+                            <select id="itemType">
+                                <option value="CHORD">Acorde</option>
+                                <option value="SCALE">Escala</option>
+                            </select>
+                            <select id="itemReference"></select>
+                            <select id="itemRoot"></select>
+                            <button id="addItemBtn">Agregar</button>
+                        </div>
+                        
+                        <ul id="itemsList" class="items-list"></ul>
+                    </div>
+                    
+                    <button id="calculateBtn" class="calculate-btn">Calcular Mapa</button>
+                </section>
+                
+                <section class="fretboard-section">
+                    <div class="fretboard-header">
+                        <h2>Diapason</h2>
+                        <button id="landscapeBtn" class="icon-btn" title="Vista horizontal">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                                <path d="M6 8l4 4-4 4"/>
+                                <path d="M14 12h4"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="fretboard" class="fretboard"></div>
+                </section>
+                
+                <section class="influence-section">
+                    <h2>Influencia</h2>
+                    <div id="influenceList" class="influence-list"></div>
+                </section>
+            </main>
+        </div>
+        
+        <!-- Song Builder Tab -->
+        <div id="tab-song-builder" class="tab-content">
+            <main class="song-builder-main">
+                <!-- Song Form -->
+                <section class="song-form-section">
+                    <h2>Nueva Cancion</h2>
+                    <div class="song-form">
+                        <input type="text" id="songName" placeholder="Nombre de la cancion">
+                        <input type="number" id="songBpm" placeholder="BPM" step="0.01" min="1" max="300">
+                        <button id="createSongBtn">Crear Cancion</button>
+                    </div>
+                </section>
+                
+                <!-- Song Editor (hidden until song is created) -->
+                <div id="songEditor" class="song-editor hidden">
+                    <!-- Song Header -->
+                    <section class="song-header-section">
+                        <div class="song-info">
+                            <h2 id="currentSongName">-</h2>
+                            <span id="currentSongBpm" class="bpm-badge">- BPM</span>
+                        </div>
+                    </section>
+                    
+                    <!-- Element Selector -->
+                    <section class="element-selector-section">
+                        <h3>Elemento a asignar</h3>
+                        <div class="element-selector">
+                            <select id="songElementType">
+                                <option value="CHORD">Acorde</option>
+                                <option value="SCALE">Escala</option>
+                            </select>
+                            <select id="songElementRef"></select>
+                            <select id="songElementRoot"></select>
+                        </div>
+                        <input type="text" id="songEventNotes" placeholder="Notas (opcional): Palm mute, Delay, etc.">
+                    </section>
+                    
+                    <!-- Sections Container -->
+                    <div id="sectionsContainer" class="sections-container"></div>
+                    
+                    <!-- Add Section Button -->
+                    <button id="addSectionBtn" class="add-section-btn">+ Agregar Seccion</button>
                 </div>
                 
-                <button id="calculateBtn" class="calculate-btn">Calcular Mapa</button>
-            </section>
-            
-            <section class="fretboard-section">
-                <div class="fretboard-header">
-                    <h2>Diapason</h2>
-                    <button id="landscapeBtn" class="icon-btn" title="Vista horizontal">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="4" width="20" height="16" rx="2"/>
-                            <path d="M6 8l4 4-4 4"/>
-                            <path d="M14 12h4"/>
-                        </svg>
-                    </button>
-                </div>
-                <div id="fretboard" class="fretboard"></div>
-            </section>
-            
-            <section class="influence-section">
-                <h2>Influencia</h2>
-                <div id="influenceList" class="influence-list"></div>
-            </section>
-        </main>
+                <!-- Song List -->
+                <section class="song-list-section">
+                    <h2>Mis Canciones</h2>
+                    <div id="songList" class="song-list"></div>
+                </section>
+            </main>
+        </div>
     </div>
     
     <!-- Landscape fullscreen overlay -->
     <div id="landscapeOverlay" class="landscape-overlay hidden">
         <div class="landscape-header">
             <span>Diapason - Vista Horizontal</span>
-            <button id="closeLandscapeBtn" class="icon-btn">✕</button>
+            <button id="closeLandscapeBtn" class="icon-btn">X</button>
         </div>
         <div id="landscapeFretboard" class="landscape-fretboard"></div>
     </div>

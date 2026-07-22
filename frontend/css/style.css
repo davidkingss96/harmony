@@ -14,6 +14,7 @@
     --text: #eee;
     --text-muted: #888;
     --radius: 10px;
+    --success: #2ecc71;
 }
 
 body {
@@ -31,12 +32,11 @@ body {
     padding: 12px;
 }
 
-/* Header */
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     padding: 0 4px;
 }
 
@@ -73,6 +73,42 @@ header .subtitle {
     background: var(--primary);
 }
 
+/* Tab Navigation */
+.tab-nav {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 4px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    background: var(--primary);
+    color: var(--text);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
 /* Main Layout */
 main {
     display: flex;
@@ -83,7 +119,11 @@ main {
 /* Cards */
 .session-panel,
 .fretboard-section,
-.influence-section {
+.influence-section,
+.song-form-section,
+.song-header-section,
+.element-selector-section,
+.song-list-section {
     background: var(--bg-card);
     border-radius: var(--radius);
     padding: 16px;
@@ -91,18 +131,13 @@ main {
 
 .session-panel h2,
 .fretboard-section h2,
-.influence-section h2 {
+.influence-section h2,
+.song-form-section h2,
+.element-selector-section h3,
+.song-list-section h2 {
     color: var(--primary);
     margin-bottom: 12px;
     font-size: 1.1rem;
-}
-
-/* Session Panel */
-.session-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 16px;
 }
 
 input, select {
@@ -136,6 +171,14 @@ button:hover {
 
 button:active {
     transform: scale(0.98);
+}
+
+/* Session Panel */
+.session-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
 }
 
 .items-section h3 {
@@ -178,10 +221,6 @@ button:active {
     padding: 0;
     font-size: 1.2rem;
     border-radius: 50%;
-}
-
-.items-list li .remove-btn:hover {
-    background: rgba(233, 69, 96, 0.2);
 }
 
 .calculate-btn {
@@ -256,10 +295,248 @@ button:active {
     text-align: right;
 }
 
-/* Fret markers */
 .fret-marker {
     fill: #666;
     font-size: 10px;
+}
+
+/* SONG BUILDER */
+
+.song-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.song-form input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+.song-editor.hidden {
+    display: none;
+}
+
+.song-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.song-info h2 {
+    margin-bottom: 0;
+}
+
+.bpm-badge {
+    background: var(--primary);
+    color: var(--text);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.element-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+#songEventNotes {
+    font-size: 0.9rem;
+    min-height: 36px;
+}
+
+.sections-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.section-card {
+    background: var(--bg-dark);
+    border-radius: var(--radius);
+    border-left: 4px solid var(--primary);
+    overflow: hidden;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--bg-input);
+}
+
+.section-name {
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.section-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.section-actions button {
+    width: auto;
+    min-height: auto;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+}
+
+.section-actions .add-measure-btn {
+    background: var(--success);
+}
+
+.section-actions .delete-section-btn {
+    background: transparent;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+}
+
+.measures-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    padding: 12px;
+}
+
+.measure-card {
+    background: var(--bg-card);
+    border-radius: 6px;
+    padding: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+    min-height: 70px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.measure-card:hover {
+    border-color: var(--primary);
+    transform: scale(1.02);
+}
+
+.measure-card.has-event {
+    border-color: var(--success);
+}
+
+.measure-number {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.measure-chord {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 2px;
+}
+
+.measure-events {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+}
+
+.measure-beats {
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+    margin-top: 4px;
+}
+
+.beat-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+}
+
+.beat-dot.filled {
+    background: var(--primary);
+}
+
+.add-section-btn {
+    background: transparent;
+    border: 2px dashed var(--primary);
+    color: var(--primary);
+    margin-top: 8px;
+}
+
+.add-section-btn:hover {
+    background: rgba(233, 69, 96, 0.1);
+}
+
+/* Song List */
+.song-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.song-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--bg-input);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.song-list-item:hover {
+    background: var(--bg-dark);
+}
+
+.song-list-item .song-list-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.song-list-item .song-list-name {
+    font-weight: 600;
+}
+
+.song-list-item .song-list-bpm {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.song-list-item .song-list-delete {
+    width: 28px;
+    height: 28px;
+    min-height: auto;
+    background: transparent;
+    color: var(--primary);
+    padding: 0;
+    font-size: 1rem;
+    border-radius: 50%;
+}
+
+.song-list-empty {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 20px;
+    font-size: 0.95rem;
 }
 
 /* Landscape Overlay */
@@ -307,101 +584,88 @@ button:active {
     max-height: 100%;
 }
 
-/* Desktop */
+/* RESPONSIVE */
+
 @media (min-width: 768px) {
     .container {
         padding: 20px;
     }
-    
     header h1 {
         font-size: 2.5rem;
     }
-    
     main {
         display: grid;
         grid-template-columns: 280px 1fr 220px;
         gap: 20px;
     }
-    
-    .session-controls {
-        flex-direction: column;
+    .song-builder-main {
+        display: block;
     }
-    
     .add-item {
         flex-direction: row;
         flex-wrap: wrap;
     }
-    
     .add-item select {
         flex: 1;
         min-width: 100px;
     }
-    
-    .add-item button {
-        width: auto;
-        min-width: 100px;
-    }
-    
     .influence-list {
         grid-template-columns: 1fr;
     }
-    
     .icon-btn {
         width: 44px;
         height: 44px;
     }
+    .element-selector {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    .element-selector select {
+        flex: 1;
+        min-width: 120px;
+    }
+    .measures-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
 }
 
-/* Large Desktop */
 @media (min-width: 1200px) {
     main {
         grid-template-columns: 300px 1fr 250px;
     }
 }
 
-/* Touch devices - larger hit targets */
 @media (hover: none) and (pointer: coarse) {
     button, select, input {
         min-height: 48px;
     }
-    
-    .items-list li {
-        padding: 12px 14px;
-    }
-    
     .icon-btn {
         width: 48px;
         height: 48px;
     }
+    .measure-card {
+        min-height: 80px;
+        padding: 10px;
+    }
 }
 
-/* Landscape mode on mobile */
 @media (orientation: landscape) and (max-height: 500px) {
     header {
         margin-bottom: 8px;
         padding: 0 8px;
     }
-    
     header h1 {
         font-size: 1.4rem;
     }
-    
     .container {
         padding: 8px;
     }
-    
     main {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 8px;
     }
-    
     .session-panel {
         grid-row: 1 / 3;
-    }
-    
-    .fretboard-section,
-    .influence-section {
-        padding: 10px;
     }
 }

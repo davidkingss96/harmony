@@ -110,3 +110,54 @@ CREATE TABLE session_items (
 
 CREATE INDEX idx_session_items_session ON session_items(session_id);
 CREATE INDEX idx_sessions_tuning ON sessions(tuning_id);
+
+-- ============================================
+-- SONG BUILDER TABLES (Phase 2)
+-- ============================================
+
+-- Songs
+CREATE TABLE songs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    bpm DECIMAL(10,2) NOT NULL,
+    tuning_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (tuning_id) REFERENCES tunings(id)
+);
+
+-- Song sections (Intro, Verse, Chorus, etc. - free names)
+CREATE TABLE song_sections (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    song_id INT NOT NULL,
+    name VARCHAR(50) NOT NULL,
+    color VARCHAR(7) DEFAULT '#e94560',
+    position INT NOT NULL,
+    FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE CASCADE
+);
+
+-- Song measures
+CREATE TABLE song_measures (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    section_id INT NOT NULL,
+    position INT NOT NULL,
+    FOREIGN KEY (section_id) REFERENCES song_sections(id) ON DELETE CASCADE
+);
+
+-- Song events (only store changes, not every beat)
+CREATE TABLE song_events (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    measure_id INT NOT NULL,
+    beat INT NOT NULL,
+    element_type ENUM('CHORD','SCALE') NOT NULL,
+    element_id INT NOT NULL,
+    root_note INT NOT NULL,
+    notes VARCHAR(255) DEFAULT NULL,
+    FOREIGN KEY (measure_id) REFERENCES song_measures(id) ON DELETE CASCADE
+);
+
+-- Song indexes
+CREATE INDEX idx_songs_tuning ON songs(tuning_id);
+CREATE INDEX idx_song_sections_song ON song_sections(song_id);
+CREATE INDEX idx_song_measures_section ON song_measures(section_id);
+CREATE INDEX idx_song_events_measure ON song_events(measure_id);

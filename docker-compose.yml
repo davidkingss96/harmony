@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: harmony-php
+    ports:
+      - "8080:80"
+    volumes:
+      - ./api:/var/www/html/api
+      - ./frontend:/var/www/html/frontend
+    depends_on:
+      - mysql
+    networks:
+      - harmony-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: harmony-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: harmony
+      MYSQL_USER: harmony_user
+      MYSQL_PASSWORD: harmony_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - harmony-mysql-data:/var/lib/mysql
+    networks:
+      - harmony-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: harmony-phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: root123
+    ports:
+      - "8081:80"
+    depends_on:
+      - mysql
+    networks:
+      - harmony-network
+
+volumes:
+  harmony-mysql-data:
+
+networks:
+  harmony-network:
+    driver: bridge

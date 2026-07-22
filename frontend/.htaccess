@@ -1,0 +1,8 @@
+RewriteEngine On
+
+# If requested resource doesn't exist as file or directory
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Serve index.html for all routes
+RewriteRule ^(.*)$ index.html [L]

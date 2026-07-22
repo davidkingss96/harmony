@@ -1,0 +1,222 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    color: #e94560;
+    margin-bottom: 5px;
+}
+
+header .subtitle {
+    color: #888;
+    font-size: 1rem;
+}
+
+main {
+    display: grid;
+    grid-template-columns: 300px 1fr 200px;
+    gap: 30px;
+}
+
+@media (max-width: 1024px) {
+    main {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Session Panel */
+.session-panel {
+    background: #16213e;
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.session-panel h2 {
+    color: #e94560;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.session-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+input, select {
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background: #0f3460;
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    background: #e94560;
+    color: #fff;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: #c73e54;
+}
+
+.items-section h3 {
+    font-size: 1rem;
+    margin-bottom: 10px;
+    color: #aaa;
+}
+
+.add-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.items-list {
+    list-style: none;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.items-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: #0f3460;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.items-list li .remove-btn {
+    background: transparent;
+    color: #e94560;
+    padding: 2px 6px;
+    font-size: 0.8rem;
+}
+
+.calculate-btn {
+    width: 100%;
+    margin-top: 15px;
+    padding: 12px;
+    font-size: 1rem;
+}
+
+/* Fretboard */
+.fretboard-section {
+    background: #16213e;
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.fretboard-section h2 {
+    color: #e94560;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.fretboard {
+    overflow-x: auto;
+}
+
+.fretboard svg {
+    display: block;
+    margin: 0 auto;
+}
+
+/* Influence Panel */
+.influence-section {
+    background: #16213e;
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.influence-section h2 {
+    color: #e94560;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.influence-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.influence-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: #0f3460;
+    border-radius: 5px;
+}
+
+.influence-item .note {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.influence-item .count {
+    color: #888;
+}
+
+.influence-item .bar {
+    flex: 1;
+    height: 6px;
+    background: #1a1a2e;
+    border-radius: 3px;
+    margin: 0 10px;
+    overflow: hidden;
+}
+
+.influence-item .bar-fill {
+    height: 100%;
+    background: #e94560;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+/* Intensity colors */
+.intensity-100 { fill: #e94560; }
+.intensity-75 { fill: #f39c12; }
+.intensity-50 { fill: #f1c40f; }
+.intensity-25 { fill: #2ecc71; }
+.intensity-0 { fill: #34495e; }
+
+/* Fret markers */
+.fret-marker {
+    fill: #888;
+    font-size: 10px;
+}

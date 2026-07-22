@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmony - Guitar Improvisation Guide</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Harmony</h1>
+            <p class="subtitle">Guitar Improvisation Guide</p>
+        </header>
+        
+        <main>
+            <section class="session-panel">
+                <h2>Sesion</h2>
+                <div class="session-controls">
+                    <input type="text" id="sessionName" placeholder="Nombre de la sesion" value="Practice">
+                    <button id="newSessionBtn">Nueva Sesion</button>
+                </div>
+                
+                <div class="items-section">
+                    <h3>Acordes y Escalas</h3>
+                    <div class="add-item">
+                        <select id="itemType">
+                            <option value="CHORD">Acorde</option>
+                            <option value="SCALE">Escala</option>
+                        </select>
+                        <select id="itemReference"></select>
+                        <select id="itemRoot"></select>
+                        <button id="addItemBtn">Agregar</button>
+                    </div>
+                    
+                    <ul id="itemsList" class="items-list"></ul>
+                </div>
+                
+                <button id="calculateBtn" class="calculate-btn">Calcular Mapa</button>
+            </section>
+            
+            <section class="fretboard-section">
+                <h2>Diapason</h2>
+                <div id="fretboard" class="fretboard"></div>
+            </section>
+            
+            <section class="influence-section">
+                <h2>Influencia</h2>
+                <div id="influenceList" class="influence-list"></div>
+            </section>
+        </main>
+    </div>
+    
+    <script src="js/app.js"></script>
+</body>
+</html>

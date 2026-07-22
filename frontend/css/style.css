@@ -208,13 +208,6 @@ button:hover {
     transition: width 0.3s ease;
 }
 
-/* Intensity colors */
-.intensity-100 { fill: #e94560; }
-.intensity-75 { fill: #f39c12; }
-.intensity-50 { fill: #f1c40f; }
-.intensity-25 { fill: #2ecc71; }
-.intensity-0 { fill: #34495e; }
-
 /* Fret markers */
 .fret-marker {
     fill: #888;

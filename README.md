@@ -76,17 +76,20 @@ harmony/
 1. **Selecciona** acordes o escalas de la lista
 2. **Agrega** raíz (C, D, E, etc.) y tipo (Mayor, Menor, etc.)
 3. **Haz clic** en "Calcular Mapa"
-4. **Visualiza** el diapasón con colores según la influencia de cada nota
+4. **Visualiza** el diapasón con opacidad variable según la influencia de cada nota
 
 ## 🎨 Intensidad Visual
 
-| Color | Influencia |
-|-------|------------|
-| 🔴 Rojo | 80-100% (más importante) |
-| 🟠 Naranja | 60-79% |
-| 🟡 Amarillo | 40-59% |
-| 🟢 Verde | 20-39% |
-| ⚫ Gris | 0-19% |
+Las notas se muestran en **rojo** con opacidad variable según su influencia:
+
+| Opacidad | Influencia | Visual |
+|----------|------------|--------|
+| 🔴 100% | 80-100% | Máxima intensidad |
+| 🔴 75% | 60-79% | Alta |
+| 🔴 50% | 40-59% | Media |
+| 🔴 25% | 20-39% | Baja |
+| 🔴 10% | 1-19% | Mínima |
+| ⚫ 5% | 0% | No pertenece |
 
 ## 📝 Licencia
 

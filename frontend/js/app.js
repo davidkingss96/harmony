@@ -172,6 +172,9 @@ function renderFretboard(heatmap, influence) {
     const numStrings = 6;
     const numFrets = 13;
     
+    // String thickness: index 0 = string 1 (low E, thickest), index 5 = string 6 (high E, thinnest)
+    const stringWidths = [3, 2.5, 2, 1.6, 1.3, 1];
+    
     const svgWidth = numFrets * 60 + 100;
     const svgHeight = numStrings * 50 + 80;
     
@@ -184,7 +187,6 @@ function renderFretboard(heatmap, influence) {
         <svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <style>
-                    .string { stroke: #888; stroke-width: 2; }
                     .fret { stroke: #666; stroke-width: 1; }
                     .note-circle { cursor: pointer; transition: all 0.2s; }
                     .note-circle:hover { stroke: #fff; stroke-width: 2; }
@@ -201,10 +203,12 @@ function renderFretboard(heatmap, influence) {
         svg += `<circle cx="${x}" cy="${svgHeight - 15}" r="4" fill="#444"/>`;
     });
     
-    // Draw strings
+    // Draw strings (top = string 6 high E thin, bottom = string 1 low E thick)
     for (let i = 0; i < numStrings; i++) {
         const y = startY + i * stringSpacing;
-        svg += `<line x1="${startX}" y1="${y}" x2="${startX + (numFrets - 1) * fretSpacing}" y2="${y}" class="string"/>`;
+        const stringNum = numStrings - i; // 6 at top, 1 at bottom
+        const thickness = stringWidths[stringNum - 1];
+        svg += `<line x1="${startX}" y1="${y}" x2="${startX + (numFrets - 1) * fretSpacing}" y2="${y}" stroke="#888" stroke-width="${thickness}"/>`;
     }
     
     // Draw frets
@@ -218,18 +222,20 @@ function renderFretboard(heatmap, influence) {
         }
     }
     
-    // Draw notes
+    // Draw notes (skip notes with 0 influence)
     heatmap.forEach(pos => {
-        const x = startX + pos.fret * fretSpacing - fretSpacing / 2;
-        const y = startY + (pos.string - 1) * stringSpacing;
+        if (pos.percentage === 0) return;
         
-        const intensityClass = pos.percentage >= 80 ? 'intensity-100' :
-                              pos.percentage >= 60 ? 'intensity-75' :
-                              pos.percentage >= 40 ? 'intensity-50' :
-                              pos.percentage >= 20 ? 'intensity-25' : 'intensity-0';
+        const x = startX + pos.fret * fretSpacing - fretSpacing / 2;
+        // Flip: string 6 (high E) at top, string 1 (low E) at bottom
+        const y = startY + (numStrings - pos.string) * stringSpacing;
+        
+        // Opacity based on influence percentage (min 0.1, max 1.0)
+        const opacity = Math.max(0.1, pos.percentage / 100);
         
         svg += `
-            <circle cx="${x}" cy="${y}" r="18" class="note-circle ${intensityClass}" 
+            <circle cx="${x}" cy="${y}" r="18" class="note-circle" 
+                    fill="#e94560" fill-opacity="${opacity}"
                     data-note="${pos.note}" data-influence="${pos.influence}"/>
             <text x="${x}" y="${y}" class="note-text">${pos.note}</text>
         `;

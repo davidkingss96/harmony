@@ -2,6 +2,8 @@ const API_BASE = '/api/index.php';
 
 let currentSession = null;
 let items = [];
+let lastHeatmap = null;
+let lastInfluence = null;
 
 // DOM Elements
 const sessionNameInput = document.getElementById('sessionName');
@@ -14,6 +16,11 @@ const itemsList = document.getElementById('itemsList');
 const calculateBtn = document.getElementById('calculateBtn');
 const fretboard = document.getElementById('fretboard');
 const influenceList = document.getElementById('influenceList');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const landscapeBtn = document.getElementById('landscapeBtn');
+const landscapeOverlay = document.getElementById('landscapeOverlay');
+const landscapeFretboard = document.getElementById('landscapeFretboard');
+const closeLandscapeBtn = document.getElementById('closeLandscapeBtn');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -66,6 +73,69 @@ function setupEventListeners() {
     newSessionBtn.addEventListener('click', createSession);
     addItemBtn.addEventListener('click', addItem);
     calculateBtn.addEventListener('click', calculateHarmony);
+    
+    // Fullscreen
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+    fullscreenBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        toggleFullscreen();
+    });
+    
+    // Landscape mode
+    landscapeBtn.addEventListener('click', openLandscape);
+    landscapeBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        openLandscape();
+    });
+    
+    closeLandscapeBtn.addEventListener('click', closeLandscape);
+    closeLandscapeBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        closeLandscape();
+    });
+    
+    // Close landscape on escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !landscapeOverlay.classList.contains('hidden')) {
+            closeLandscape();
+        }
+    });
+}
+
+// Fullscreen
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+            console.log('Fullscreen not supported:', err);
+        });
+    } else {
+        document.exitFullscreen();
+    }
+}
+
+// Landscape mode
+function openLandscape() {
+    if (!lastHeatmap || !lastInfluence) {
+        alert('Primero calcula un mapa');
+        return;
+    }
+    
+    landscapeOverlay.classList.remove('hidden');
+    renderFretboardInContainer(landscapeFretboard, lastHeatmap, true);
+    
+    // Try to lock to landscape
+    if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+    }
+}
+
+function closeLandscape() {
+    landscapeOverlay.classList.add('hidden');
+    
+    // Unlock orientation
+    if (screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+    }
 }
 
 // Session management
@@ -76,7 +146,6 @@ async function createSession() {
         return;
     }
     
-    // Get default tuning (E Standard = 1)
     const tuningId = 1;
     
     const response = await fetch(`${API_BASE}?endpoint=sessions`, {
@@ -143,7 +212,7 @@ async function calculateHarmony() {
         return;
     }
     
-    const tuningId = 1; // E Standard
+    const tuningId = 1;
     
     const response = await fetch(`${API_BASE}?endpoint=harmony`, {
         method: 'POST',
@@ -163,78 +232,109 @@ async function calculateHarmony() {
         return;
     }
     
+    lastHeatmap = data.heatmap;
+    lastInfluence = data.influence;
+    
     renderFretboard(data.heatmap, data.influence);
     renderInfluence(data.influence);
 }
 
+// Get responsive sizes based on container width
+function getSizes(containerWidth, landscape = false) {
+    const padding = landscape ? 40 : 32;
+    const availableWidth = containerWidth - padding;
+    
+    // Calculate fret spacing to fit container
+    const maxFretSpacing = landscape ? 70 : 55;
+    const minFretSpacing = 35;
+    let fretSpacing = Math.min(maxFretSpacing, availableWidth / 13);
+    fretSpacing = Math.max(minFretSpacing, fretSpacing);
+    
+    const stringSpacing = fretSpacing * 0.8;
+    const startX = fretSpacing * 1.2;
+    const startY = stringSpacing * 0.8;
+    const noteRadius = fretSpacing * 0.3;
+    const fontSize = Math.max(8, fretSpacing * 0.16);
+    
+    return {
+        fretSpacing,
+        stringSpacing,
+        startX,
+        startY,
+        noteRadius,
+        fontSize,
+        svgWidth: startX + (12 * fretSpacing) + fretSpacing,
+        svgHeight: startY + (5 * stringSpacing) + stringSpacing + 30
+    };
+}
+
 // Render fretboard
 function renderFretboard(heatmap, influence) {
+    const containerWidth = fretboard.parentElement.clientWidth - 32;
+    renderFretboardInContainer(fretboard, heatmap, false, containerWidth);
+}
+
+function renderFretboardInContainer(container, heatmap, landscape = false, containerWidth = null) {
     const numStrings = 6;
     const numFrets = 13;
     
-    // String thickness: index 0 = string 1 (low E, thickest), index 5 = string 6 (high E, thinnest)
     const stringWidths = [3, 2.5, 2, 1.6, 1.3, 1];
     
-    const svgWidth = numFrets * 60 + 100;
-    const svgHeight = numStrings * 50 + 80;
+    if (!containerWidth) {
+        containerWidth = container.parentElement.clientWidth - 32;
+    }
     
-    const stringSpacing = 50;
-    const fretSpacing = 60;
-    const startX = 80;
-    const startY = 40;
+    const sizes = getSizes(containerWidth, landscape);
     
     let svg = `
-        <svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">
+        <svg width="${sizes.svgWidth}" height="${sizes.svgHeight}" viewBox="0 0 ${sizes.svgWidth} ${sizes.svgHeight}" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <style>
                     .fret { stroke: #666; stroke-width: 1; }
                     .note-circle { cursor: pointer; transition: all 0.2s; }
                     .note-circle:hover { stroke: #fff; stroke-width: 2; }
-                    .note-text { fill: #fff; font-size: 10px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
-                    .fret-marker { fill: #666; font-size: 10px; text-anchor: middle; }
+                    .note-text { fill: #fff; font-size: ${sizes.fontSize}px; text-anchor: middle; dominant-baseline: central; pointer-events: none; font-weight: 600; }
+                    .fret-marker { fill: #666; font-size: ${sizes.fontSize}px; text-anchor: middle; }
                 </style>
             </defs>
     `;
     
-    // Draw fret markers (dots)
+    // Fret markers (dots)
     const markerFrets = [3, 5, 7, 9, 12];
     markerFrets.forEach(fret => {
-        const x = startX + fret * fretSpacing - fretSpacing / 2;
-        svg += `<circle cx="${x}" cy="${svgHeight - 15}" r="4" fill="#444"/>`;
+        const x = sizes.startX + fret * sizes.fretSpacing - sizes.fretSpacing / 2;
+        svg += `<circle cx="${x}" cy="${sizes.svgHeight - 12}" r="3" fill="#444"/>`;
     });
     
-    // Draw strings (top = string 6 high E thin, bottom = string 1 low E thick)
+    // Strings (top = string 6 high E thin, bottom = string 1 low E thick)
     for (let i = 0; i < numStrings; i++) {
-        const y = startY + i * stringSpacing;
-        const stringNum = numStrings - i; // 6 at top, 1 at bottom
+        const y = sizes.startY + i * sizes.stringSpacing;
+        const stringNum = numStrings - i;
         const thickness = stringWidths[stringNum - 1];
-        svg += `<line x1="${startX}" y1="${y}" x2="${startX + (numFrets - 1) * fretSpacing}" y2="${y}" stroke="#888" stroke-width="${thickness}"/>`;
+        svg += `<line x1="${sizes.startX}" y1="${y}" x2="${sizes.startX + (numFrets - 1) * sizes.fretSpacing}" y2="${y}" stroke="#888" stroke-width="${thickness}"/>`;
     }
     
-    // Draw frets
+    // Frets
     for (let i = 0; i < numFrets; i++) {
-        const x = startX + i * fretSpacing;
-        svg += `<line x1="${x}" y1="${startY}" x2="${x}" y2="${startY + (numStrings - 1) * stringSpacing}" class="fret"/>`;
+        const x = sizes.startX + i * sizes.fretSpacing;
+        svg += `<line x1="${x}" y1="${sizes.startY}" x2="${x}" y2="${sizes.startY + (numStrings - 1) * sizes.stringSpacing}" class="fret"/>`;
         
-        // Fret number
         if (i > 0) {
-            svg += `<text x="${x}" y="${startY - 15}" class="fret-marker">${i}</text>`;
+            svg += `<text x="${x}" y="${sizes.startY - 8}" class="fret-marker">${i}</text>`;
         }
     }
     
-    // Draw notes (skip notes with 0 influence)
+    // Notes
     heatmap.forEach(pos => {
         if (pos.percentage === 0) return;
         
-        const x = startX + pos.fret * fretSpacing - fretSpacing / 2;
-        // Flip: string 6 (high E) at top, string 1 (low E) at bottom
-        const y = startY + (numStrings - pos.string) * stringSpacing;
+        const x = sizes.startX + pos.fret * sizes.fretSpacing - sizes.fretSpacing / 2;
+        const y = sizes.startY + (numStrings - pos.string) * sizes.stringSpacing;
         
-        // Opacity based on influence percentage (min 0.1, max 1.0)
         const opacity = Math.max(0.1, pos.percentage / 100);
         
         svg += `
-            <circle cx="${x}" cy="${y}" r="18" class="note-circle" 
+            <circle cx="${x}" cy="${y}" r="${sizes.noteRadius}" class="note-circle" 
                     fill="#e94560" fill-opacity="${opacity}"
                     data-note="${pos.note}" data-influence="${pos.influence}"/>
             <text x="${x}" y="${y}" class="note-text">${pos.note}</text>
@@ -242,7 +342,7 @@ function renderFretboard(heatmap, influence) {
     });
     
     svg += '</svg>';
-    fretboard.innerHTML = svg;
+    container.innerHTML = svg;
 }
 
 // Render influence list
@@ -269,3 +369,14 @@ function renderInfluence(influence) {
         `;
     }).join('');
 }
+
+// Re-render fretboard on resize
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        if (lastHeatmap && lastInfluence) {
+            renderFretboard(lastHeatmap, lastInfluence);
+        }
+    }, 250);
+});

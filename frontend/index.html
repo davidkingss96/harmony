@@ -2,15 +2,27 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="screen-orientation" content="portrait">
     <title>Harmony - Guitar Improvisation Guide</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Harmony</h1>
-            <p class="subtitle">Guitar Improvisation Guide</p>
+            <div class="header-content">
+                <h1>Harmony</h1>
+                <p class="subtitle">Guitar Improvisation Guide</p>
+            </div>
+            <div class="header-actions">
+                <button id="fullscreenBtn" class="icon-btn" title="Pantalla completa">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                    </svg>
+                </button>
+            </div>
         </header>
         
         <main>
@@ -40,7 +52,16 @@
             </section>
             
             <section class="fretboard-section">
-                <h2>Diapason</h2>
+                <div class="fretboard-header">
+                    <h2>Diapason</h2>
+                    <button id="landscapeBtn" class="icon-btn" title="Vista horizontal">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="4" width="20" height="16" rx="2"/>
+                            <path d="M6 8l4 4-4 4"/>
+                            <path d="M14 12h4"/>
+                        </svg>
+                    </button>
+                </div>
                 <div id="fretboard" class="fretboard"></div>
             </section>
             
@@ -49,6 +70,15 @@
                 <div id="influenceList" class="influence-list"></div>
             </section>
         </main>
+    </div>
+    
+    <!-- Landscape fullscreen overlay -->
+    <div id="landscapeOverlay" class="landscape-overlay hidden">
+        <div class="landscape-header">
+            <span>Diapason - Vista Horizontal</span>
+            <button id="closeLandscapeBtn" class="icon-btn">✕</button>
+        </div>
+        <div id="landscapeFretboard" class="landscape-fretboard"></div>
     </div>
     
     <script src="js/app.js"></script>

@@ -8,9 +8,8 @@ let lastInfluence = null;
 
 // Song Builder state
 let currentSong = null;
-let songElementType = 'CHORD';
-let songElementId = null;
-let songElementRoot = 0;
+let selectedMeasureId = null;
+let clipboard = null;
 
 // DOM Elements - Fretboard
 const sessionNameInput = document.getElementById('sessionName');
@@ -30,19 +29,29 @@ const landscapeFretboard = document.getElementById('landscapeFretboard');
 const closeLandscapeBtn = document.getElementById('closeLandscapeBtn');
 
 // DOM Elements - Song Builder
+const songListView = document.getElementById('songListView');
+const songEditorView = document.getElementById('songEditorView');
+const songList = document.getElementById('songList');
+const newSongForm = document.getElementById('newSongForm');
+const newSongBtn = document.getElementById('newSongBtn');
 const songNameInput = document.getElementById('songName');
 const songBpmInput = document.getElementById('songBpm');
 const createSongBtn = document.getElementById('createSongBtn');
-const songEditor = document.getElementById('songEditor');
+const cancelSongBtn = document.getElementById('cancelSongBtn');
+const backToListBtn = document.getElementById('backToListBtn');
 const currentSongName = document.getElementById('currentSongName');
 const currentSongBpm = document.getElementById('currentSongBpm');
 const songElementTypeSelect = document.getElementById('songElementType');
 const songElementRefSelect = document.getElementById('songElementRef');
 const songElementRootSelect = document.getElementById('songElementRoot');
 const songEventNotesInput = document.getElementById('songEventNotes');
+const selectedMeasureInfo = document.getElementById('selectedMeasureInfo');
+const selectedMeasureLabel = document.getElementById('selectedMeasureLabel');
+const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+const assignBtn = document.getElementById('assignBtn');
+const pasteBtn = document.getElementById('pasteBtn');
 const sectionsContainer = document.getElementById('sectionsContainer');
 const addSectionBtn = document.getElementById('addSectionBtn');
-const songList = document.getElementById('songList');
 
 // Tab navigation
 const tabBtns = document.querySelectorAll('.tab-btn');
@@ -146,7 +155,29 @@ function setupEventListeners() {
         }
     });
 
-    // Song Builder
+    // Song Builder - Song list
+    newSongBtn.addEventListener('click', () => {
+        newSongForm.classList.remove('hidden');
+        newSongBtn.classList.add('hidden');
+        songNameInput.value = '';
+        songBpmInput.value = '';
+        songNameInput.focus();
+    });
+    
+    cancelSongBtn.addEventListener('click', () => {
+        newSongForm.classList.add('hidden');
+        newSongBtn.classList.remove('hidden');
+    });
+    
+    createSongBtn.addEventListener('click', createSong);
+    
+    // Song Builder - Editor
+    backToListBtn.addEventListener('click', goToSongList);
+    clearSelectionBtn.addEventListener('click', clearMeasureSelection);
+    assignBtn.addEventListener('click', assignToSelectedMeasure);
+    pasteBtn.addEventListener('click', pasteMeasure);
+    addSectionBtn.addEventListener('click', addSection);
+    
     songElementTypeSelect.addEventListener('change', async () => {
         const type = songElementTypeSelect.value;
         const endpoint = type === 'CHORD' ? 'chords' : 'scales';
@@ -154,9 +185,6 @@ function setupEventListeners() {
         const data = await response.json();
         updateSongElementRef(type, data);
     });
-    
-    createSongBtn.addEventListener('click', createSong);
-    addSectionBtn.addEventListener('click', addSection);
 }
 
 // ============================================
@@ -350,7 +378,29 @@ function renderInfluence(influence) {
 }
 
 // ============================================
-// SONG BUILDER
+// SONG BUILDER - VIEWS
+// ============================================
+
+function goToSongList() {
+    songListView.classList.remove('hidden');
+    songEditorView.classList.add('hidden');
+    selectedMeasureId = null;
+    loadSongs();
+}
+
+function openSongEditor(song) {
+    currentSong = song;
+    songListView.classList.add('hidden');
+    songEditorView.classList.remove('hidden');
+    currentSongName.textContent = currentSong.name;
+    currentSongBpm.textContent = currentSong.bpm + ' BPM';
+    selectedMeasureId = null;
+    selectedMeasureInfo.classList.add('hidden');
+    renderSongSections();
+}
+
+// ============================================
+// SONG BUILDER - CRUD
 // ============================================
 
 async function createSong() {
@@ -366,12 +416,11 @@ async function createSong() {
         body: JSON.stringify({ name, bpm: bpm.toFixed(2), tuning_id: 1 })
     });
     
-    currentSong = await response.json();
-    songEditor.classList.remove('hidden');
-    currentSongName.textContent = currentSong.name;
-    currentSongBpm.textContent = currentSong.bpm + ' BPM';
-    sectionsContainer.innerHTML = '';
-    loadSongs();
+    const song = await response.json();
+    song.sections = [];
+    newSongForm.classList.add('hidden');
+    newSongBtn.classList.remove('hidden');
+    openSongEditor(song);
 }
 
 async function loadSongs() {
@@ -384,7 +433,7 @@ async function loadSongs() {
     }
     
     songList.innerHTML = songs.map(song => `
-        <div class="song-list-item" onclick="openSong(${song.id})">
+        <div class="song-list-item" onclick="loadAndOpenSong(${song.id})">
             <div class="song-list-info">
                 <span class="song-list-name">${song.name}</span>
                 <span class="song-list-bpm">${song.bpm} BPM</span>
@@ -394,26 +443,15 @@ async function loadSongs() {
     `).join('');
 }
 
-async function openSong(songId) {
+async function loadAndOpenSong(songId) {
     const response = await fetch(`${API_BASE}?endpoint=songs&id=${songId}`);
-    currentSong = await response.json();
-    
-    songEditor.classList.remove('hidden');
-    currentSongName.textContent = currentSong.name;
-    currentSongBpm.textContent = currentSong.bpm + ' BPM';
-    
-    renderSongSections();
+    const song = await response.json();
+    openSongEditor(song);
 }
 
 async function deleteSong(songId) {
     if (!confirm('Eliminar esta cancion?')) return;
-    
     await fetch(`${API_BASE}?endpoint=songs&id=${songId}`, { method: 'DELETE' });
-    
-    if (currentSong && currentSong.id === songId) {
-        currentSong = null;
-        songEditor.classList.add('hidden');
-    }
     loadSongs();
 }
 
@@ -423,8 +461,9 @@ async function addSection() {
     const name = prompt('Nombre de la seccion (Intro, Verso, Solo, Jam...):');
     if (!name) return;
     
+    if (!currentSong.sections) currentSong.sections = [];
     const colors = ['#3498db', '#2ecc71', '#e94560', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22'];
-    const color = colors[currentSong.sections ? currentSong.sections.length % colors.length : 0];
+    const color = colors[currentSong.sections.length % colors.length];
     
     const response = await fetch(`${API_BASE}?endpoint=song-sections`, {
         method: 'POST',
@@ -433,17 +472,13 @@ async function addSection() {
     });
     
     const section = await response.json();
-    
-    if (!currentSong.sections) currentSong.sections = [];
     currentSong.sections.push({ ...section, measures: [] });
     renderSongSections();
 }
 
 async function deleteSection(sectionId) {
     if (!confirm('Eliminar esta seccion y todos sus compases?')) return;
-    
     await fetch(`${API_BASE}?endpoint=song-sections&id=${sectionId}`, { method: 'DELETE' });
-    
     currentSong.sections = currentSong.sections.filter(s => s.id !== sectionId);
     renderSongSections();
 }
@@ -456,7 +491,6 @@ async function addMeasure(sectionId) {
     });
     
     const measure = await response.json();
-    
     const section = currentSong.sections.find(s => s.id === sectionId);
     if (section) {
         if (!section.measures) section.measures = [];
@@ -467,15 +501,72 @@ async function addMeasure(sectionId) {
 
 async function deleteMeasure(measureId) {
     if (!confirm('Eliminar este compas?')) return;
-    
     await fetch(`${API_BASE}?endpoint=song-measures&id=${measureId}`, { method: 'DELETE' });
-    
     currentSong.sections.forEach(section => {
         if (section.measures) {
             section.measures = section.measures.filter(m => m.id !== measureId);
         }
     });
+    if (selectedMeasureId === measureId) clearMeasureSelection();
     renderSongSections();
+}
+
+// ============================================
+// SONG BUILDER - MEASURES
+// ============================================
+
+function selectMeasure(measureId) {
+    selectedMeasureId = measureId;
+    const measure = findMeasureById(measureId);
+    if (!measure) return;
+    
+    const globalPos = getGlobalMeasurePosition(measure);
+    selectedMeasureLabel.textContent = `#${globalPos}`;
+    selectedMeasureInfo.classList.remove('hidden');
+    
+    if (measure.events && measure.events.length > 0) {
+        const firstEvent = measure.events[0];
+        if (firstEvent.element_type) {
+            songElementTypeSelect.value = firstEvent.element_type;
+            songElementTypeSelect.dispatchEvent(new Event('change'));
+            setTimeout(() => {
+                songElementRefSelect.value = firstEvent.element_id;
+                songElementRootSelect.value = firstEvent.root_note;
+            }, 50);
+        }
+        if (firstEvent.notes) {
+            songEventNotesInput.value = firstEvent.notes;
+        }
+    }
+    
+    renderSongSections();
+}
+
+function clearMeasureSelection() {
+    selectedMeasureId = null;
+    selectedMeasureInfo.classList.add('hidden');
+    songEventNotesInput.value = '';
+    renderSongSections();
+}
+
+function findMeasureById(measureId) {
+    for (const section of currentSong.sections || []) {
+        for (const m of section.measures || []) {
+            if (m.id === measureId) return m;
+        }
+    }
+    return null;
+}
+
+function getGlobalMeasurePosition(measure) {
+    let position = 0;
+    for (const section of currentSong.sections || []) {
+        for (const m of section.measures || []) {
+            position++;
+            if (m.id === measure.id) return position;
+        }
+    }
+    return position;
 }
 
 async function applyToMeasure(measureId) {
@@ -486,7 +577,6 @@ async function applyToMeasure(measureId) {
     
     if (!elementId) { alert('Selecciona un elemento'); return; }
     
-    // Apply to beat 1 (the player will hold for beats 2-4)
     await fetch(`${API_BASE}?endpoint=song-events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -500,9 +590,61 @@ async function applyToMeasure(measureId) {
         })
     });
     
-    // Reload the song to get updated data
-    openSong(currentSong.id);
+    const response = await fetch(`${API_BASE}?endpoint=songs&id=${currentSong.id}`);
+    currentSong = await response.json();
+    renderSongSections();
 }
+
+function assignToSelectedMeasure() {
+    if (!selectedMeasureId) {
+        alert('Selecciona un compas primero');
+        return;
+    }
+    applyToMeasure(selectedMeasureId);
+}
+
+// ============================================
+// SONG BUILDER - COPY / PASTE
+// ============================================
+
+function copyMeasure(measureId) {
+    const measure = findMeasureById(measureId);
+    if (!measure || !measure.events || measure.events.length === 0) {
+        alert('Este compas esta vacio');
+        return;
+    }
+    clipboard = JSON.parse(JSON.stringify(measure.events));
+    pasteBtn.disabled = false;
+}
+
+function pasteMeasure() {
+    if (!selectedMeasureId || !clipboard) return;
+    pasteEventsToMeasure(selectedMeasureId, clipboard);
+}
+
+async function pasteEventsToMeasure(measureId, events) {
+    for (const event of events) {
+        await fetch(`${API_BASE}?endpoint=song-events`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                measure_id: measureId,
+                beat: event.beat,
+                element_type: event.element_type,
+                element_id: event.element_id,
+                root_note: event.root_note,
+                notes: event.notes || null
+            })
+        });
+    }
+    const response = await fetch(`${API_BASE}?endpoint=songs&id=${currentSong.id}`);
+    currentSong = await response.json();
+    renderSongSections();
+}
+
+// ============================================
+// SONG BUILDER - RENDER
+// ============================================
 
 function renderSongSections() {
     if (!currentSong || !currentSong.sections) {
@@ -515,13 +657,28 @@ function renderSongSections() {
             const firstEvent = measure.events && measure.events.length > 0 ? measure.events[0] : null;
             const hasEvent = firstEvent !== null;
             const chordDisplay = hasEvent ? `${firstEvent.root_note_name}${firstEvent.element_name.charAt(0)}` : '';
-            const extraEvents = measure.events && measure.events.length > 1 ? measure.events.slice(1) : [];
-            const globalPosition = getGlobalMeasurePosition(section, measure);
+            const globalPos = getGlobalMeasurePosition(measure);
+            const isSelected = selectedMeasureId === measure.id;
             
-            return `<div class="measure-card ${hasEvent ? 'has-event' : ''}" onclick="applyToMeasure(${measure.id})">
-                <div class="measure-number">#${globalPosition}</div>
-                <div class="measure-chord">${chordDisplay}</div>
-                ${extraEvents.length > 0 ? `<div class="measure-events">${extraEvents.map(e => `${e.beat}:${e.root_note_name}`).join(' ')}</div>` : ''}
+            return `<div class="measure-card ${hasEvent ? 'has-event' : ''} ${isSelected ? 'selected' : ''}" onclick="selectMeasure(${measure.id})">
+                <div class="measure-card-header">
+                    <div class="measure-number">#${globalPos}</div>
+                    <div class="measure-actions">
+                        <button class="measure-action-btn" onclick="event.stopPropagation(); copyMeasure(${measure.id})" title="Copiar">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                        </button>
+                        <button class="measure-action-btn danger" onclick="event.stopPropagation(); deleteMeasure(${measure.id})" title="Eliminar">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="measure-chord">${chordDisplay || '&nbsp;'}</div>
                 <div class="measure-beats">
                     ${[1,2,3,4].map(b => {
                         const hasBeat = measure.events && measure.events.some(e => e.beat === b);
@@ -547,19 +704,6 @@ function renderSongSections() {
             </div>
         </div>`;
     }).join('');
-}
-
-function getGlobalMeasurePosition(currentSection, measure) {
-    let position = 0;
-    for (const section of currentSong.sections) {
-        for (const m of (section.measures || [])) {
-            position++;
-            if (section.id === currentSection.id && m.id === measure.id) {
-                return position;
-            }
-        }
-    }
-    return position;
 }
 
 // ============================================

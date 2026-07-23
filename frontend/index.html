@@ -24,7 +24,6 @@
             </div>
         </header>
         
-        <!-- Tab Navigation -->
         <nav class="tab-nav">
             <button class="tab-btn active" data-tab="fretboard">Diapason</button>
             <button class="tab-btn" data-tab="song-builder">Song Builder</button>
@@ -39,7 +38,6 @@
                         <input type="text" id="sessionName" placeholder="Nombre de la sesion" value="Practice">
                         <button id="newSessionBtn">Nueva Sesion</button>
                     </div>
-                    
                     <div class="items-section">
                         <h3>Acordes y Escalas</h3>
                         <div class="add-item">
@@ -51,13 +49,10 @@
                             <select id="itemRoot"></select>
                             <button id="addItemBtn">Agregar</button>
                         </div>
-                        
                         <ul id="itemsList" class="items-list"></ul>
                     </div>
-                    
                     <button id="calculateBtn" class="calculate-btn">Calcular Mapa</button>
                 </section>
-                
                 <section class="fretboard-section">
                     <div class="fretboard-header">
                         <h2>Diapason</h2>
@@ -71,7 +66,6 @@
                     </div>
                     <div id="fretboard" class="fretboard"></div>
                 </section>
-                
                 <section class="influence-section">
                     <h2>Influencia</h2>
                     <div id="influenceList" class="influence-list"></div>
@@ -81,54 +75,83 @@
         
         <!-- Song Builder Tab -->
         <div id="tab-song-builder" class="tab-content">
-            <main class="song-builder-main">
-                <!-- Song Form -->
-                <section class="song-form-section">
+            <!-- VIEW: Song List -->
+            <div id="songListView" class="song-view">
+                <section class="song-list-section">
+                    <div class="song-list-header">
+                        <h2>Mis Canciones</h2>
+                        <button id="newSongBtn" class="new-song-btn">+ Nueva Cancion</button>
+                    </div>
+                    <div id="songList" class="song-list"></div>
+                </section>
+                
+                <!-- New Song Form (inline, hidden by default) -->
+                <section id="newSongForm" class="song-form-section hidden">
                     <h2>Nueva Cancion</h2>
                     <div class="song-form">
                         <input type="text" id="songName" placeholder="Nombre de la cancion">
                         <input type="number" id="songBpm" placeholder="BPM" step="0.01" min="1" max="300">
-                        <button id="createSongBtn">Crear Cancion</button>
+                        <div class="form-actions">
+                            <button id="cancelSongBtn" class="btn-secondary">Cancelar</button>
+                            <button id="createSongBtn">Crear</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- VIEW: Song Editor -->
+            <div id="songEditorView" class="song-view hidden">
+                <section class="song-editor-header">
+                    <button id="backToListBtn" class="icon-btn" title="Volver a la lista">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5m7-7l-7 7 7 7"/>
+                        </svg>
+                    </button>
+                    <div class="song-info">
+                        <h2 id="currentSongName">-</h2>
+                        <span id="currentSongBpm" class="bpm-badge">- BPM</span>
                     </div>
                 </section>
                 
-                <!-- Song Editor (hidden until song is created) -->
-                <div id="songEditor" class="song-editor hidden">
-                    <!-- Song Header -->
-                    <section class="song-header-section">
-                        <div class="song-info">
-                            <h2 id="currentSongName">-</h2>
-                            <span id="currentSongBpm" class="bpm-badge">- BPM</span>
+                <!-- Element Selector (the brush) -->
+                <section class="element-selector-section">
+                    <h3>Pincel - Elemento a asignar</h3>
+                    <div class="element-selector">
+                        <select id="songElementType">
+                            <option value="CHORD">Acorde</option>
+                            <option value="SCALE">Escala</option>
+                        </select>
+                        <select id="songElementRef"></select>
+                        <select id="songElementRoot"></select>
+                    </div>
+                    <input type="text" id="songEventNotes" placeholder="Notas (opcional): Palm mute, Delay, etc.">
+                    <div id="selectedMeasureInfo" class="selected-measure-info hidden">
+                        <span>Compas seleccionado: <strong id="selectedMeasureLabel">-</strong></span>
+                        <div class="selected-measure-actions">
+                            <button id="assignBtn" class="btn-assign">Asignar</button>
+                            <button id="clearSelectionBtn" class="btn-small">X</button>
                         </div>
-                    </section>
-                    
-                    <!-- Element Selector -->
-                    <section class="element-selector-section">
-                        <h3>Elemento a asignar</h3>
-                        <div class="element-selector">
-                            <select id="songElementType">
-                                <option value="CHORD">Acorde</option>
-                                <option value="SCALE">Escala</option>
-                            </select>
-                            <select id="songElementRef"></select>
-                            <select id="songElementRoot"></select>
-                        </div>
-                        <input type="text" id="songEventNotes" placeholder="Notas (opcional): Palm mute, Delay, etc.">
-                    </section>
-                    
-                    <!-- Sections Container -->
-                    <div id="sectionsContainer" class="sections-container"></div>
-                    
-                    <!-- Add Section Button -->
-                    <button id="addSectionBtn" class="add-section-btn">+ Agregar Seccion</button>
-                </div>
-                
-                <!-- Song List -->
-                <section class="song-list-section">
-                    <h2>Mis Canciones</h2>
-                    <div id="songList" class="song-list"></div>
+                    </div>
                 </section>
-            </main>
+                
+                <!-- Clipboard -->
+                <section class="clipboard-section">
+                    <div class="clipboard-actions">
+                        <button id="pasteBtn" class="clipboard-btn" disabled title="Pegar compas">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                                <rect x="8" y="2" width="8" height="4" rx="1"/>
+                            </svg>
+                            Pegar
+                        </button>
+                    </div>
+                </section>
+                
+                <!-- Sections -->
+                <div id="sectionsContainer" class="sections-container"></div>
+                
+                <button id="addSectionBtn" class="add-section-btn">+ Agregar Seccion</button>
+            </div>
         </div>
     </div>
     

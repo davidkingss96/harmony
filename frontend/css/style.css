@@ -140,6 +140,8 @@ main {
     font-size: 1.1rem;
 }
 
+.song-form-section.hidden { display: none; }
+
 input, select {
     width: 100%;
     padding: 12px;
@@ -302,6 +304,24 @@ button:active {
 
 /* SONG BUILDER */
 
+.song-view.hidden { display: none; }
+
+.song-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.song-list-header h2 { margin-bottom: 0; }
+
+.new-song-btn {
+    width: auto;
+    min-height: auto;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
 .song-form {
     display: flex;
     flex-direction: column;
@@ -312,8 +332,28 @@ button:active {
     -moz-appearance: textfield;
 }
 
-.song-editor.hidden {
-    display: none;
+.form-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.form-actions button { flex: 1; }
+
+.btn-secondary {
+    background: transparent;
+    border: 2px solid var(--primary);
+    color: var(--primary);
+}
+
+.btn-secondary:hover {
+    background: rgba(233, 69, 96, 0.1);
+}
+
+.song-editor-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
 }
 
 .song-info {
@@ -346,6 +386,82 @@ button:active {
 #songEventNotes {
     font-size: 0.9rem;
     min-height: 36px;
+    margin-top: 8px;
+}
+
+.selected-measure-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--bg-input);
+    border-radius: 6px;
+    margin-top: 8px;
+    font-size: 0.9rem;
+}
+
+.selected-measure-info.hidden { display: none; }
+
+.selected-measure-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.btn-assign {
+    width: auto;
+    min-height: auto;
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    background: var(--success);
+    font-weight: 600;
+}
+
+.btn-assign:hover {
+    background: #27ae60;
+}
+
+.btn-small {
+    width: auto;
+    min-height: auto;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    background: transparent;
+    border: 1px solid var(--text-muted);
+    color: var(--text-muted);
+}
+
+.clipboard-section {
+    padding: 0;
+    margin-bottom: 8px;
+}
+
+.clipboard-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.clipboard-btn {
+    width: auto;
+    min-height: auto;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--text-muted);
+    color: var(--text-muted);
+}
+
+.clipboard-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.clipboard-btn:not(:disabled) {
+    border-color: var(--primary);
+    color: var(--primary);
 }
 
 .sections-container {
@@ -425,22 +541,64 @@ button:active {
     min-height: 70px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
 }
 
 .measure-card:hover {
     border-color: var(--primary);
-    transform: scale(1.02);
 }
 
 .measure-card.has-event {
     border-color: var(--success);
 }
 
+.measure-card.selected {
+    border-color: #f1c40f;
+    box-shadow: 0 0 0 2px rgba(241, 196, 15, 0.3);
+}
+
+.measure-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+}
+
+.measure-actions {
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.measure-card:hover .measure-actions {
+    opacity: 1;
+}
+
+.measure-action-btn {
+    width: 22px;
+    height: 22px;
+    min-height: auto;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 4px;
+}
+
+.measure-action-btn:hover {
+    background: var(--bg-input);
+    color: var(--text);
+}
+
+.measure-action-btn.danger:hover {
+    color: var(--primary);
+}
+
 .measure-number {
     font-size: 0.7rem;
     color: var(--text-muted);
-    margin-bottom: 4px;
 }
 
 .measure-chord {
@@ -448,6 +606,10 @@ button:active {
     font-size: 1rem;
     color: var(--text);
     margin-bottom: 2px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .measure-events {
@@ -646,6 +808,13 @@ button:active {
     .measure-card {
         min-height: 80px;
         padding: 10px;
+    }
+    .measure-actions {
+        opacity: 1;
+    }
+    .measure-action-btn {
+        width: 28px;
+        height: 28px;
     }
 }
 

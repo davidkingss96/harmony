@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadTunings();
     setupEventListeners();
     loadSongs();
+    loadPlayerSongs();
 });
 
 // ============================================
@@ -77,6 +78,10 @@ tabBtns.forEach(btn => {
         tabContents.forEach(c => c.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+
+        if (btn.dataset.tab === 'player') {
+            loadPlayerSongs();
+        }
     });
 });
 
@@ -719,3 +724,279 @@ window.addEventListener('resize', () => {
         }
     }, 250);
 });
+
+// ============================================
+// PLAYER
+// ============================================
+
+const audioEngine = new AudioEngine();
+const player = new Player(audioEngine);
+let songMap = null;
+let playerSongData = null;
+
+// DOM - Player
+const playerSetup = document.getElementById('playerSetup');
+const playerActive = document.getElementById('playerActive');
+const playerSongListEl = document.getElementById('playerSongList');
+const playerStartConfig = document.getElementById('playerStartConfig');
+const playerStartMeasure = document.getElementById('playerStartMeasure');
+const playerPlayBtn = document.getElementById('playerPlayBtn');
+const playerStopBtn = document.getElementById('playerStopBtn');
+const playerPauseBtn = document.getElementById('playerPauseBtn');
+const playerLoopBtn = document.getElementById('playerLoopBtn');
+const playerPerformanceBtn = document.getElementById('playerPerformanceBtn');
+const playerBackBtn = document.getElementById('playerBackBtn');
+const playerFretboard = document.getElementById('playerFretboard');
+const playerNextChord = document.getElementById('playerNextChord');
+const nextChordName = document.getElementById('nextChordName');
+const hudSectionName = document.getElementById('hudSectionName');
+const hudSectionColor = document.getElementById('hudSectionColor');
+const hudBeatDots = document.getElementById('hudBeatDots');
+const hudBeatsRemaining = document.getElementById('hudBeatsRemaining');
+const hudMeasureNum = document.getElementById('hudMeasureNum');
+const hudMeasureTotal = document.getElementById('hudMeasureTotal');
+const hudBpm = document.getElementById('hudBpm');
+const hudTimeSig = document.getElementById('hudTimeSig');
+const playFromEditorBtn = document.getElementById('playFromEditorBtn');
+const songMapContainer = document.getElementById('songMap');
+
+function setupPlayerListeners() {
+    playerPlayBtn.addEventListener('click', startPlayer);
+    playerStopBtn.addEventListener('click', stopPlayer);
+    playerPauseBtn.addEventListener('click', togglePause);
+    playerLoopBtn.addEventListener('click', togglePlayerLoop);
+    playerPerformanceBtn.addEventListener('click', togglePerformanceMode);
+    playerBackBtn.addEventListener('click', exitPlayer);
+    playFromEditorBtn.addEventListener('click', playFromEditor);
+
+    player.onTick = onPlayerTick;
+    player.onMeasureChange = onPlayerMeasureChange;
+    player.onEnd = onPlayerEnd;
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.body.classList.contains('performance-mode')) {
+            togglePerformanceMode();
+        }
+    });
+}
+
+async function loadPlayerSongs() {
+    const response = await fetch(`${API_BASE}?endpoint=songs`);
+    const songs = await response.json();
+
+    if (songs.length === 0) {
+        playerSongListEl.innerHTML = '<div class="song-list-empty">No hay canciones. Crea una en Song Builder.</div>';
+        return;
+    }
+
+    playerSongListEl.innerHTML = songs.map(song => `
+        <div class="player-song-item" onclick="selectPlayerSong(${song.id}, this)">
+            <div class="song-info">
+                <span class="song-name">${song.name}</span>
+                <span class="song-meta">${song.bpm} BPM</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function selectPlayerSong(songId, el) {
+    document.querySelectorAll('.player-song-item').forEach(item => item.classList.remove('selected'));
+    if (el) el.classList.add('selected');
+
+    const response = await fetch(`${API_BASE}?endpoint=songs&id=${songId}&player=1`);
+    playerSongData = await response.json();
+
+    if (!playerSongData.player_data || playerSongData.player_data.total_measures === 0) {
+        alert('Esta cancion no tiene compases.');
+        playerSongData = null;
+        return;
+    }
+
+    populateStartMeasureSelect(playerSongData.player_data);
+    playerStartConfig.classList.remove('hidden');
+}
+
+function populateStartMeasureSelect(playerData) {
+    let html = '';
+    playerData.measures.forEach(m => {
+        const ev = m.events && m.events.length > 0 ? m.events[0] : null;
+        const label = ev ? `${ev.root_note_name}${ev.element_name.charAt(0)}` : '(vacio)';
+        html += `<option value="${m.global_index}">#${m.global_index + 1} ${m.section_name} - ${label}</option>`;
+    });
+    playerStartMeasure.innerHTML = html;
+}
+
+function startPlayer() {
+    if (!playerSongData) { alert('Selecciona una cancion primero'); return; }
+    if (playerSongData.player_data.total_measures === 0) { alert('La cancion no tiene compases'); return; }
+
+    player.load(playerSongData.player_data);
+
+    songMap = new SongMap(songMapContainer);
+    songMap.load(playerSongData.player_data.measures);
+    songMap.onMeasureClick = (index) => {
+        player.seekToMeasure(index);
+    };
+
+    playerSetup.classList.add('hidden');
+    playerActive.classList.remove('hidden');
+
+    updatePlayerHud(player.state.currentMeasureIndex, player.state.currentBeat);
+
+    const startIndex = parseInt(playerStartMeasure.value) || 0;
+    player.play(startIndex);
+}
+
+function stopPlayer() {
+    player.stop();
+}
+
+function togglePause() {
+    if (player.state.isPlaying) {
+        player.stop();
+        playerPauseBtn.textContent = '▶';
+    } else {
+        player.play(player.state.currentMeasureIndex);
+        playerPauseBtn.textContent = '⏸';
+    }
+}
+
+function togglePlayerLoop() {
+    if (!songMap) return;
+
+    if (player.loop.active) {
+        player.clearLoop();
+        songMap.clearLoop();
+        playerLoopBtn.classList.remove('active');
+    } else if (songMap.loopStartIndex !== null) {
+        alert('Selecciona el compas final del loop en el mapa');
+    } else {
+        alert('Primero selecciona el compas de inicio del loop en el mapa');
+    }
+}
+
+function setPlayerLoopFromMap() {
+    if (!songMap || songMap.loopRange === null) return;
+    player.toggleLoop(songMap.loopRange.start, songMap.loopRange.end);
+    playerLoopBtn.classList.add('active');
+}
+
+function togglePerformanceMode() {
+    document.body.classList.toggle('performance-mode');
+    playerPerformanceBtn.classList.toggle('active');
+}
+
+function exitPlayer() {
+    player.stop();
+    playerSetup.classList.remove('hidden');
+    playerActive.classList.add('hidden');
+    document.body.classList.remove('performance-mode');
+    playerLoopBtn.classList.remove('active');
+    playerPerformanceBtn.classList.remove('active');
+    playerPauseBtn.textContent = '⏸';
+    playerSongData = null;
+    loadPlayerSongs();
+}
+
+async function playFromEditor() {
+    if (!currentSong) return;
+    const response = await fetch(`${API_BASE}?endpoint=songs&id=${currentSong.id}&player=1`);
+    playerSongData = await response.json();
+
+    if (!playerSongData.player_data || playerSongData.player_data.total_measures === 0) {
+        alert('Agrega compases antes de reproducir');
+        return;
+    }
+
+    // Switch to player tab
+    tabBtns.forEach(b => b.classList.remove('active'));
+    tabContents.forEach(c => c.classList.remove('active'));
+    document.querySelector('[data-tab="player"]').classList.add('active');
+    document.getElementById('tab-player').classList.add('active');
+
+    populateStartMeasureSelect(playerSongData.player_data);
+    playerStartConfig.classList.remove('hidden');
+
+    // Auto-select this song in the list
+    playerSongListEl.innerHTML = `
+        <div class="player-song-item selected">
+            <div class="song-info">
+                <span class="song-name">${playerSongData.name}</span>
+                <span class="song-meta">${playerSongData.bpm} BPM</span>
+            </div>
+        </div>
+    `;
+}
+
+function onPlayerTick(data) {
+    updateBeatDots(data.currentBeat, data.beatsTotal);
+    hudBeatsRemaining.textContent = `${data.beatsRemaining} beat${data.beatsRemaining !== 1 ? 's' : ''}`;
+}
+
+function onPlayerMeasureChange(index) {
+    const measure = player.getCurrentMeasure();
+    if (!measure) return;
+
+    const event = player.getCurrentEvent();
+    const nextEvent = player.getNextEvent();
+
+    // Render fretboard with current heatmap
+    if (event && event.heatmap && event.heatmap.length > 0) {
+        const containerWidth = playerFretboard.parentElement.clientWidth - 16;
+        renderFretboardInContainer(playerFretboard, event.heatmap, false, containerWidth);
+    }
+
+    // Update next chord indicator
+    if (nextEvent && nextEvent.root_note_name && nextEvent.element_name) {
+        nextChordName.textContent = `${nextEvent.root_note_name} ${nextEvent.element_name}`;
+        playerNextChord.classList.remove('hidden');
+    } else {
+        playerNextChord.classList.add('hidden');
+    }
+
+    // Update HUD
+    updatePlayerHud(index, 1);
+
+    // Update song map cursor
+    if (songMap) {
+        songMap.updateCursor(index);
+    }
+
+    // Update loop state from map
+    if (songMap && songMap.loopRange && !player.loop.active) {
+        setPlayerLoopFromMap();
+    }
+}
+
+function onPlayerEnd() {
+    playerPauseBtn.textContent = '▶';
+}
+
+function updatePlayerHud(measureIndex, beat) {
+    const measure = player.getCurrentMeasure();
+    if (!measure) return;
+
+    hudSectionName.textContent = measure.section_name || '-';
+    hudSectionColor.style.background = measure.section_color || '#e94560';
+    hudMeasureNum.textContent = measureIndex + 1;
+    hudMeasureTotal.textContent = player.song ? player.song.total_measures : 0;
+    hudBpm.textContent = player.bpm;
+    hudTimeSig.textContent = `${player.timeSig.num}/${player.timeSig.den}`;
+    updateBeatDots(beat, player.timeSig.num);
+}
+
+function updateBeatDots(currentBeat, totalBeats) {
+    let html = '';
+    for (let i = 1; i <= totalBeats; i++) {
+        const isAccent = i === 1;
+        const isActive = i === currentBeat;
+        let cls = 'hud-beat-dot';
+        if (isActive && isAccent) cls += ' active accent';
+        else if (isActive) cls += ' active';
+        html += `<div class="${cls}"></div>`;
+    }
+    hudBeatDots.innerHTML = html;
+}
+
+// Init player listeners
+setupPlayerListeners();

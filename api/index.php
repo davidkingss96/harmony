@@ -220,45 +220,97 @@ function handleSongs($method) {
                 $stmt->execute([$id]);
                 $song = $stmt->fetch();
                 
-                if ($song) {
-                    // Get sections with measures and events
-                    $stmt = $db->prepare("SELECT * FROM song_sections WHERE song_id = ? ORDER BY position");
-                    $stmt->execute([$id]);
-                    $sections = $stmt->fetchAll();
-                    
-                    foreach ($sections as &$section) {
-                        $stmt = $db->prepare("SELECT * FROM song_measures WHERE section_id = ? ORDER BY position");
-                        $stmt->execute([$section['id']]);
-                        $measures = $stmt->fetchAll();
-                        
-                        foreach ($measures as &$measure) {
-                            $stmt = $db->prepare("
-                                SELECT se.*, 
-                                       CASE 
-                                           WHEN se.element_type = 'CHORD' THEN c.name
-                                           WHEN se.element_type = 'SCALE' THEN s.name
-                                       END as element_name,
-                                       n.name as root_note_name
-                                FROM song_events se
-                                LEFT JOIN chords c ON se.element_type = 'CHORD' AND se.element_id = c.id
-                                LEFT JOIN scales s ON se.element_type = 'SCALE' AND se.element_id = s.id
-                                LEFT JOIN notes n ON se.root_note = n.chromatic_position
-                                WHERE se.measure_id = ?
-                                ORDER BY se.beat
-                            ");
-                            $stmt->execute([$measure['id']]);
-                            $measure['events'] = $stmt->fetchAll();
-                        }
-                        
-                        $section['measures'] = $measures;
-                    }
-                    
-                    $song['sections'] = $sections;
-                    echo json_encode($song);
-                } else {
+                if (!$song) {
                     http_response_code(404);
                     echo json_encode(['error' => 'Song not found']);
+                    return;
                 }
+                
+                // Get sections with measures and events
+                $stmt = $db->prepare("SELECT * FROM song_sections WHERE song_id = ? ORDER BY position");
+                $stmt->execute([$id]);
+                $sections = $stmt->fetchAll();
+                
+                foreach ($sections as &$section) {
+                    $stmt = $db->prepare("SELECT * FROM song_measures WHERE section_id = ? ORDER BY position");
+                    $stmt->execute([$section['id']]);
+                    $measures = $stmt->fetchAll();
+                    
+                    foreach ($measures as &$measure) {
+                        $stmt = $db->prepare("
+                            SELECT se.*, 
+                                   CASE 
+                                       WHEN se.element_type = 'CHORD' THEN c.name
+                                       WHEN se.element_type = 'SCALE' THEN s.name
+                                   END as element_name,
+                                   n.name as root_note_name
+                            FROM song_events se
+                            LEFT JOIN chords c ON se.element_type = 'CHORD' AND se.element_id = c.id
+                            LEFT JOIN scales s ON se.element_type = 'SCALE' AND se.element_id = s.id
+                            LEFT JOIN notes n ON se.root_note = n.chromatic_position
+                            WHERE se.measure_id = ?
+                            ORDER BY se.beat
+                        ");
+                        $stmt->execute([$measure['id']]);
+                        $measure['events'] = $stmt->fetchAll();
+                    }
+                    
+                    $section['measures'] = $measures;
+                }
+                
+                $song['sections'] = $sections;
+                
+                // Player mode: pre-calculate heatmaps for all events
+                if (isset($_GET['player']) && $_GET['player'] === '1') {
+                    require_once __DIR__ . '/models/HarmonyEngine.php';
+                    $engine = new HarmonyEngine();
+                    
+                    $playerMeasures = [];
+                    $globalIndex = 0;
+                    
+                    foreach ($sections as $section) {
+                        foreach ($section['measures'] as $measure) {
+                            $playerMeasure = [
+                                'global_index' => $globalIndex,
+                                'section_name' => $section['name'],
+                                'section_color' => $section['color'],
+                                'events' => []
+                            ];
+                            
+                            foreach ($measure['events'] as $event) {
+                                $heatmapResult = $engine->calculateHeatmap(
+                                    $song['tuning_id'],
+                                    [[
+                                        'type' => $event['element_type'],
+                                        'reference_id' => $event['element_id'],
+                                        'root_note' => $event['root_note']
+                                    ]]
+                                );
+                                
+                                $playerMeasure['events'][] = [
+                                    'beat' => (int)$event['beat'],
+                                    'element_type' => $event['element_type'],
+                                    'element_name' => $event['element_name'],
+                                    'root_note_name' => $event['root_note_name'],
+                                    'root_note' => (int)$event['root_note'],
+                                    'notes' => $event['notes'],
+                                    'heatmap' => $heatmapResult['heatmap'] ?? [],
+                                    'influence' => $heatmapResult['influence'] ?? []
+                                ];
+                            }
+                            
+                            $playerMeasures[] = $playerMeasure;
+                            $globalIndex++;
+                        }
+                    }
+                    
+                    $song['player_data'] = [
+                        'total_measures' => $globalIndex,
+                        'measures' => $playerMeasures
+                    ];
+                }
+                
+                echo json_encode($song);
             } else {
                 $stmt = $db->query("SELECT * FROM songs ORDER BY created_at DESC");
                 echo json_encode($stmt->fetchAll());
@@ -275,16 +327,20 @@ function handleSongs($method) {
             }
             
             $tuningId = $data['tuning_id'] ?? 1;
+            $tsNum = $data['time_signature_num'] ?? 4;
+            $tsDen = $data['time_signature_den'] ?? 4;
             
-            $stmt = $db->prepare("INSERT INTO songs (name, bpm, tuning_id) VALUES (?, ?, ?)");
-            $stmt->execute([$data['name'], $data['bpm'], $tuningId]);
+            $stmt = $db->prepare("INSERT INTO songs (name, bpm, tuning_id, time_signature_num, time_signature_den) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$data['name'], $data['bpm'], $tuningId, $tsNum, $tsDen]);
             
             http_response_code(201);
             echo json_encode([
                 'id' => $db->lastInsertId(),
                 'name' => $data['name'],
                 'bpm' => $data['bpm'],
-                'tuning_id' => $tuningId
+                'tuning_id' => $tuningId,
+                'time_signature_num' => $tsNum,
+                'time_signature_den' => $tsDen
             ]);
             break;
             

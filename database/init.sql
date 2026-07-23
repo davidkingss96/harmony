@@ -121,6 +121,8 @@ CREATE TABLE songs (
     name VARCHAR(100) NOT NULL,
     bpm DECIMAL(10,2) NOT NULL,
     tuning_id INT NOT NULL,
+    time_signature_num INT DEFAULT 4,
+    time_signature_den INT DEFAULT 4,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (tuning_id) REFERENCES tunings(id)
@@ -161,3 +163,23 @@ CREATE INDEX idx_songs_tuning ON songs(tuning_id);
 CREATE INDEX idx_song_sections_song ON song_sections(song_id);
 CREATE INDEX idx_song_measures_section ON song_measures(section_id);
 CREATE INDEX idx_song_events_measure ON song_events(measure_id);
+
+-- ============================================
+-- MIGRATION: Phase 3 - Player
+-- ============================================
+-- For fresh installs the CREATE TABLE above already has the columns.
+-- The following handles existing databases that lack these columns.
+SET @dbname = DATABASE();
+
+SELECT COUNT(*) INTO @col_exists
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = @dbname
+  AND TABLE_NAME = 'songs'
+  AND COLUMN_NAME = 'time_signature_num';
+
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE songs ADD COLUMN time_signature_num INT DEFAULT 4, ADD COLUMN time_signature_den INT DEFAULT 4',
+    'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

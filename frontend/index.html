@@ -27,6 +27,7 @@
         <nav class="tab-nav">
             <button class="tab-btn active" data-tab="fretboard">Diapason</button>
             <button class="tab-btn" data-tab="song-builder">Song Builder</button>
+            <button class="tab-btn" data-tab="player">Player</button>
         </nav>
         
         <!-- Fretboard Tab -->
@@ -111,6 +112,7 @@
                         <h2 id="currentSongName">-</h2>
                         <span id="currentSongBpm" class="bpm-badge">- BPM</span>
                     </div>
+                    <button id="playFromEditorBtn" class="btn-play-editor">▶ Play</button>
                 </section>
                 
                 <!-- Element Selector (the brush) -->
@@ -153,6 +155,67 @@
                 <button id="addSectionBtn" class="add-section-btn">+ Agregar Seccion</button>
             </div>
         </div>
+
+        <!-- Player Tab -->
+        <div id="tab-player" class="tab-content">
+            <!-- Pre-play: song selection -->
+            <div id="playerSetup" class="player-setup">
+                <section class="player-song-select">
+                    <h2>Player</h2>
+                    <p class="player-subtitle">Selecciona una cancion para reproducir</p>
+                    <div id="playerSongList" class="player-song-list"></div>
+                    <div id="playerStartConfig" class="player-start-config hidden">
+                        <label>Iniciar desde:</label>
+                        <select id="playerStartMeasure"></select>
+                        <button id="playerPlayBtn" class="btn-player-play">▶ Reproducir</button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Active player -->
+            <div id="playerActive" class="player-active hidden">
+                <!-- Song Map -->
+                <section class="player-map-section">
+                    <div id="songMap" class="song-map"></div>
+                </section>
+
+                <!-- Fretboard + Next chord -->
+                <section class="player-fretboard-section">
+                    <div class="player-fretboard-wrapper">
+                        <div id="playerFretboard" class="fretboard player-fretboard"></div>
+                        <div id="playerNextChord" class="player-next-chord hidden">
+                            <div class="next-label">Next</div>
+                            <div class="next-name" id="nextChordName">-</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- HUD -->
+                <section class="player-hud">
+                    <div class="hud-left">
+                        <span class="hud-section-color" id="hudSectionColor"></span>
+                        <span class="hud-section-name" id="hudSectionName">-</span>
+                    </div>
+                    <div class="hud-center">
+                        <div class="hud-beat-dots" id="hudBeatDots"></div>
+                        <div class="hud-beats-remaining" id="hudBeatsRemaining"></div>
+                    </div>
+                    <div class="hud-right">
+                        <span class="hud-measure"><span id="hudMeasureNum">1</span>/<span id="hudMeasureTotal">16</span></span>
+                        <span class="hud-meta"><span id="hudBpm">120</span> BPM · <span id="hudTimeSig">4/4</span></span>
+                    </div>
+                </section>
+
+                <!-- Controls -->
+                <section class="player-controls">
+                    <button id="playerStopBtn" class="player-ctrl-btn">⏹</button>
+                    <button id="playerPauseBtn" class="player-ctrl-btn">⏸</button>
+                    <button id="playerLoopBtn" class="player-ctrl-btn">🔁</button>
+                    <button id="playerPerformanceBtn" class="player-ctrl-btn">⛶</button>
+                    <button id="playerBackBtn" class="player-ctrl-btn">← Salir</button>
+                </section>
+            </div>
+        </div>
     </div>
     
     <!-- Landscape fullscreen overlay -->
@@ -164,6 +227,9 @@
         <div id="landscapeFretboard" class="landscape-fretboard"></div>
     </div>
     
+    <script src="js/audio-engine.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/song-map.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

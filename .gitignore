@@ -1,0 +1,6 @@
+/api/vendor/
+/api/composer.lock
+/var/
+/thumbs.db
+.DS_Store
+node_modules/

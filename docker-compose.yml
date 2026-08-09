@@ -11,6 +11,14 @@ services:
     volumes:
       - ./api:/var/www/html/api
       - ./frontend:/var/www/html/frontend
+      - ./database:/var/www/html/database
+    environment:
+      DB_HOST: mysql
+      DB_NAME: harmony
+      DB_USER: harmony_user
+      DB_PASS: harmony_pass
+      APP_DEBUG: "true"
+    command: sh -c "php database/migrate.php && apache2-foreground"
     depends_on:
       - mysql
     networks:
@@ -27,7 +35,6 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
       - harmony-mysql-data:/var/lib/mysql
     networks:
       - harmony-network

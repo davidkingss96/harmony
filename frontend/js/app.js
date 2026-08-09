@@ -1,4 +1,4 @@
-const API_BASE = '/api/index.php';
+const API_BASE = '/api';
 
 // Fretboard state
 let currentSession = null;
@@ -90,21 +90,21 @@ tabBtns.forEach(btn => {
 // ============================================
 
 async function loadChords() {
-    const response = await fetch(`${API_BASE}?endpoint=chords`);
+    const response = await fetch(`${API_BASE}/chords`);
     const chords = await response.json();
     updateReferenceSelect('CHORD', chords);
     updateSongElementRef('CHORD', chords);
 }
 
 async function loadScales() {
-    const response = await fetch(`${API_BASE}?endpoint=scales`);
+    const response = await fetch(`${API_BASE}/scales`);
     const scales = await response.json();
     updateReferenceSelect('SCALE', scales);
     updateSongElementRef('SCALE', scales);
 }
 
 async function loadNotes() {
-    const response = await fetch(`${API_BASE}?endpoint=notes`);
+    const response = await fetch(`${API_BASE}/notes`);
     const notes = await response.json();
     
     const html = notes.map(n => `<option value="${n.chromatic_position}">${n.name}</option>`).join('');
@@ -113,7 +113,7 @@ async function loadNotes() {
 }
 
 async function loadTunings() {
-    const response = await fetch(`${API_BASE}?endpoint=tunings`);
+    const response = await fetch(`${API_BASE}/tunings`);
     const tunings = await response.json();
 }
 
@@ -142,7 +142,7 @@ function setupEventListeners() {
     itemTypeSelect.addEventListener('change', async () => {
         const type = itemTypeSelect.value;
         const endpoint = type === 'CHORD' ? 'chords' : 'scales';
-        const response = await fetch(`${API_BASE}?endpoint=${endpoint}`);
+        const response = await fetch(`${API_BASE}/${endpoint}`);
         const data = await response.json();
         updateReferenceSelect(type, data);
     });
@@ -186,7 +186,7 @@ function setupEventListeners() {
     songElementTypeSelect.addEventListener('change', async () => {
         const type = songElementTypeSelect.value;
         const endpoint = type === 'CHORD' ? 'chords' : 'scales';
-        const response = await fetch(`${API_BASE}?endpoint=${endpoint}`);
+        const response = await fetch(`${API_BASE}/${endpoint}`);
         const data = await response.json();
         updateSongElementRef(type, data);
     });
@@ -231,7 +231,7 @@ async function createSession() {
     const name = sessionNameInput.value.trim();
     if (!name) { alert('Ingresa un nombre'); return; }
     
-    const response = await fetch(`${API_BASE}?endpoint=sessions`, {
+    const response = await fetch(`${API_BASE}/sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, tuning_id: 1 })
@@ -277,7 +277,7 @@ function renderItems() {
 async function calculateHarmony() {
     if (items.length === 0) { alert('Agrega al menos un elemento'); return; }
     
-    const response = await fetch(`${API_BASE}?endpoint=harmony`, {
+    const response = await fetch(`${API_BASE}/harmony`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tuning_id: 1, items })
@@ -415,7 +415,7 @@ async function createSong() {
     if (!name) { alert('Ingresa el nombre de la cancion'); return; }
     if (isNaN(bpm) || bpm <= 0) { alert('Ingresa un BPM valido'); return; }
     
-    const response = await fetch(`${API_BASE}?endpoint=songs`, {
+    const response = await fetch(`${API_BASE}/songs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, bpm: bpm.toFixed(2), tuning_id: 1 })
@@ -429,7 +429,7 @@ async function createSong() {
 }
 
 async function loadSongs() {
-    const response = await fetch(`${API_BASE}?endpoint=songs`);
+    const response = await fetch(`${API_BASE}/songs`);
     const songs = await response.json();
     
     if (songs.length === 0) {
@@ -449,14 +449,14 @@ async function loadSongs() {
 }
 
 async function loadAndOpenSong(songId) {
-    const response = await fetch(`${API_BASE}?endpoint=songs&id=${songId}`);
+    const response = await fetch(`${API_BASE}/songs/${songId}`);
     const song = await response.json();
     openSongEditor(song);
 }
 
 async function deleteSong(songId) {
     if (!confirm('Eliminar esta cancion?')) return;
-    await fetch(`${API_BASE}?endpoint=songs&id=${songId}`, { method: 'DELETE' });
+    await fetch(`${API_BASE}/songs/${songId}`, { method: 'DELETE' });
     loadSongs();
 }
 
@@ -470,10 +470,10 @@ async function addSection() {
     const colors = ['#3498db', '#2ecc71', '#e94560', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22'];
     const color = colors[currentSong.sections.length % colors.length];
     
-    const response = await fetch(`${API_BASE}?endpoint=song-sections`, {
+    const response = await fetch(`${API_BASE}/songs/${currentSong.id}/sections`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ song_id: currentSong.id, name, color })
+        body: JSON.stringify({ name, color })
     });
     
     const section = await response.json();
@@ -483,16 +483,16 @@ async function addSection() {
 
 async function deleteSection(sectionId) {
     if (!confirm('Eliminar esta seccion y todos sus compases?')) return;
-    await fetch(`${API_BASE}?endpoint=song-sections&id=${sectionId}`, { method: 'DELETE' });
+    await fetch(`${API_BASE}/song-sections/${sectionId}`, { method: 'DELETE' });
     currentSong.sections = currentSong.sections.filter(s => s.id !== sectionId);
     renderSongSections();
 }
 
 async function addMeasure(sectionId) {
-    const response = await fetch(`${API_BASE}?endpoint=song-measures`, {
+    const response = await fetch(`${API_BASE}/sections/${sectionId}/measures`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section_id: sectionId })
+        body: JSON.stringify({})
     });
     
     const measure = await response.json();
@@ -506,7 +506,7 @@ async function addMeasure(sectionId) {
 
 async function deleteMeasure(measureId) {
     if (!confirm('Eliminar este compas?')) return;
-    await fetch(`${API_BASE}?endpoint=song-measures&id=${measureId}`, { method: 'DELETE' });
+    await fetch(`${API_BASE}/song-measures/${measureId}`, { method: 'DELETE' });
     currentSong.sections.forEach(section => {
         if (section.measures) {
             section.measures = section.measures.filter(m => m.id !== measureId);
@@ -582,11 +582,10 @@ async function applyToMeasure(measureId) {
     
     if (!elementId) { alert('Selecciona un elemento'); return; }
     
-    await fetch(`${API_BASE}?endpoint=song-events`, {
+    await fetch(`${API_BASE}/measures/${measureId}/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            measure_id: measureId,
             beat: 1,
             element_type: type,
             element_id: elementId,
@@ -595,7 +594,7 @@ async function applyToMeasure(measureId) {
         })
     });
     
-    const response = await fetch(`${API_BASE}?endpoint=songs&id=${currentSong.id}`);
+    const response = await fetch(`${API_BASE}/songs/${currentSong.id}`);
     currentSong = await response.json();
     renderSongSections();
 }
@@ -629,11 +628,10 @@ function pasteMeasure() {
 
 async function pasteEventsToMeasure(measureId, events) {
     for (const event of events) {
-        await fetch(`${API_BASE}?endpoint=song-events`, {
+        await fetch(`${API_BASE}/measures/${measureId}/events`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                measure_id: measureId,
                 beat: event.beat,
                 element_type: event.element_type,
                 element_id: event.element_id,
@@ -642,7 +640,7 @@ async function pasteEventsToMeasure(measureId, events) {
             })
         });
     }
-    const response = await fetch(`${API_BASE}?endpoint=songs&id=${currentSong.id}`);
+    const response = await fetch(`${API_BASE}/songs/${currentSong.id}`);
     currentSong = await response.json();
     renderSongSections();
 }
@@ -781,7 +779,7 @@ function setupPlayerListeners() {
 }
 
 async function loadPlayerSongs() {
-    const response = await fetch(`${API_BASE}?endpoint=songs`);
+    const response = await fetch(`${API_BASE}/songs`);
     const songs = await response.json();
 
     if (songs.length === 0) {
@@ -803,7 +801,7 @@ async function selectPlayerSong(songId, el) {
     document.querySelectorAll('.player-song-item').forEach(item => item.classList.remove('selected'));
     if (el) el.classList.add('selected');
 
-    const response = await fetch(`${API_BASE}?endpoint=songs&id=${songId}&player=1`);
+    const response = await fetch(`${API_BASE}/songs/${songId}?player=1`);
     playerSongData = await response.json();
 
     if (!playerSongData.player_data || playerSongData.player_data.total_measures === 0) {
@@ -900,7 +898,7 @@ function exitPlayer() {
 
 async function playFromEditor() {
     if (!currentSong) return;
-    const response = await fetch(`${API_BASE}?endpoint=songs&id=${currentSong.id}&player=1`);
+    const response = await fetch(`${API_BASE}/songs/${currentSong.id}?player=1`);
     playerSongData = await response.json();
 
     if (!playerSongData.player_data || playerSongData.player_data.total_measures === 0) {

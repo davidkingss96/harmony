@@ -1,10 +1,6 @@
 RewriteEngine On
 
-# Handle OPTIONS requests
-RewriteCond %{REQUEST_METHOD} OPTIONS
-RewriteRule ^(.*)$ $1 [R=200,L]
-
-# Route all requests to index.php
+# Route all non-file requests to the front controller (Slim)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php?endpoint=$1 [QSA,L]
+RewriteRule ^(.*)$ index.php [QSA,L]

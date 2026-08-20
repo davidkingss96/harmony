@@ -1,4 +1,22 @@
 const API_BASE = '/api';
+const API_KEY = 'password';
+
+async function apiFetch(url, options = {}) {
+    const headers = { 'X-API-Key': API_KEY, ...options.headers };
+    const response = await fetch(url, { ...options, headers });
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        throw new Error(err.error || `HTTP ${response.status}`);
+    }
+    return response;
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
 
 // Fretboard state
 let currentSession = null;
@@ -90,37 +108,37 @@ tabBtns.forEach(btn => {
 // ============================================
 
 async function loadChords() {
-    const response = await fetch(`${API_BASE}/chords`);
+    const response = await apiFetch(`${API_BASE}/chords`);
     const chords = await response.json();
     updateReferenceSelect('CHORD', chords);
     updateSongElementRef('CHORD', chords);
 }
 
 async function loadScales() {
-    const response = await fetch(`${API_BASE}/scales`);
+    const response = await apiFetch(`${API_BASE}/scales`);
     const scales = await response.json();
     updateReferenceSelect('SCALE', scales);
     updateSongElementRef('SCALE', scales);
 }
 
 async function loadNotes() {
-    const response = await fetch(`${API_BASE}/notes`);
+    const response = await apiFetch(`${API_BASE}/notes`);
     const notes = await response.json();
     
-    const html = notes.map(n => `<option value="${n.chromatic_position}">${n.name}</option>`).join('');
+    const html = notes.map(n => `<option value="${n.chromatic_position}">${escapeHtml(n.name)}</option>`).join('');
     itemRootSelect.innerHTML = html;
     songElementRootSelect.innerHTML = html;
 }
 
 async function loadTunings() {
-    const response = await fetch(`${API_BASE}/tunings`);
+    const response = await apiFetch(`${API_BASE}/tunings`);
     const tunings = await response.json();
 }
 
 function updateReferenceSelect(type, data) {
     if (itemTypeSelect.value === type) {
         itemReferenceSelect.innerHTML = data.map(item => 
-            `<option value="${item.id}">${item.name}</option>`
+            `<option value="${item.id}">${escapeHtml(item.name)}</option>`
         ).join('');
     }
 }
@@ -128,7 +146,7 @@ function updateReferenceSelect(type, data) {
 function updateSongElementRef(type, data) {
     if (songElementTypeSelect.value === type) {
         songElementRefSelect.innerHTML = data.map(item => 
-            `<option value="${item.id}">${item.name}</option>`
+            `<option value="${item.id}">${escapeHtml(item.name)}</option>`
         ).join('');
     }
 }
@@ -142,7 +160,7 @@ function setupEventListeners() {
     itemTypeSelect.addEventListener('change', async () => {
         const type = itemTypeSelect.value;
         const endpoint = type === 'CHORD' ? 'chords' : 'scales';
-        const response = await fetch(`${API_BASE}/${endpoint}`);
+        const response = await apiFetch(`${API_BASE}/${endpoint}`);
         const data = await response.json();
         updateReferenceSelect(type, data);
     });
@@ -186,7 +204,7 @@ function setupEventListeners() {
     songElementTypeSelect.addEventListener('change', async () => {
         const type = songElementTypeSelect.value;
         const endpoint = type === 'CHORD' ? 'chords' : 'scales';
-        const response = await fetch(`${API_BASE}/${endpoint}`);
+        const response = await apiFetch(`${API_BASE}/${endpoint}`);
         const data = await response.json();
         updateSongElementRef(type, data);
     });
@@ -231,7 +249,7 @@ async function createSession() {
     const name = sessionNameInput.value.trim();
     if (!name) { alert('Ingresa un nombre'); return; }
     
-    const response = await fetch(`${API_BASE}/sessions`, {
+    const response = await apiFetch(`${API_BASE}/sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, tuning_id: 1 })
@@ -264,7 +282,7 @@ function removeItem(index) {
 function renderItems() {
     itemsList.innerHTML = items.map((item, index) => `
         <li>
-            <span>${item.root_note_name} ${item.reference_name} (${item.type})</span>
+            <span>${escapeHtml(item.root_note_name)} ${escapeHtml(item.reference_name)} (${escapeHtml(item.type)})</span>
             <button class="remove-btn" onclick="removeItem(${index})">×</button>
         </li>
     `).join('');
@@ -277,7 +295,7 @@ function renderItems() {
 async function calculateHarmony() {
     if (items.length === 0) { alert('Agrega al menos un elemento'); return; }
     
-    const response = await fetch(`${API_BASE}/harmony`, {
+    const response = await apiFetch(`${API_BASE}/harmony`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tuning_id: 1, items })
@@ -359,8 +377,8 @@ function renderFretboardInContainer(container, heatmap, landscape = false, conta
         const x = s.startX + pos.fret * s.fretSpacing - s.fretSpacing / 2;
         const y = s.startY + (numStrings - pos.string) * s.stringSpacing;
         const opacity = Math.max(0.1, pos.percentage / 100);
-        svg += `<circle cx="${x}" cy="${y}" r="${s.noteRadius}" class="note-circle" fill="#e94560" fill-opacity="${opacity}" data-note="${pos.note}" data-influence="${pos.influence}"/>
-                <text x="${x}" y="${y}" class="note-text">${pos.note}</text>`;
+        svg += `<circle cx="${x}" cy="${y}" r="${s.noteRadius}" class="note-circle" fill="#e94560" fill-opacity="${opacity}" data-note="${escapeHtml(pos.note)}" data-influence="${pos.influence}"/>
+                <text x="${x}" y="${y}" class="note-text">${escapeHtml(pos.note)}</text>`;
     });
     
     svg += '</svg>';
@@ -415,7 +433,7 @@ async function createSong() {
     if (!name) { alert('Ingresa el nombre de la cancion'); return; }
     if (isNaN(bpm) || bpm <= 0) { alert('Ingresa un BPM valido'); return; }
     
-    const response = await fetch(`${API_BASE}/songs`, {
+    const response = await apiFetch(`${API_BASE}/songs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, bpm: bpm.toFixed(2), tuning_id: 1 })
@@ -429,7 +447,7 @@ async function createSong() {
 }
 
 async function loadSongs() {
-    const response = await fetch(`${API_BASE}/songs`);
+    const response = await apiFetch(`${API_BASE}/songs`);
     const songs = await response.json();
     
     if (songs.length === 0) {
@@ -440,7 +458,7 @@ async function loadSongs() {
     songList.innerHTML = songs.map(song => `
         <div class="song-list-item" onclick="loadAndOpenSong(${song.id})">
             <div class="song-list-info">
-                <span class="song-list-name">${song.name}</span>
+                <span class="song-list-name">${escapeHtml(song.name)}</span>
                 <span class="song-list-bpm">${song.bpm} BPM</span>
             </div>
             <button class="song-list-delete" onclick="event.stopPropagation(); deleteSong(${song.id})">×</button>
@@ -449,14 +467,14 @@ async function loadSongs() {
 }
 
 async function loadAndOpenSong(songId) {
-    const response = await fetch(`${API_BASE}/songs/${songId}`);
+    const response = await apiFetch(`${API_BASE}/songs/${songId}`);
     const song = await response.json();
     openSongEditor(song);
 }
 
 async function deleteSong(songId) {
     if (!confirm('Eliminar esta cancion?')) return;
-    await fetch(`${API_BASE}/songs/${songId}`, { method: 'DELETE' });
+    await apiFetch(`${API_BASE}/songs/${songId}`, { method: 'DELETE' });
     loadSongs();
 }
 
@@ -470,7 +488,7 @@ async function addSection() {
     const colors = ['#3498db', '#2ecc71', '#e94560', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22'];
     const color = colors[currentSong.sections.length % colors.length];
     
-    const response = await fetch(`${API_BASE}/songs/${currentSong.id}/sections`, {
+    const response = await apiFetch(`${API_BASE}/songs/${currentSong.id}/sections`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, color })
@@ -483,13 +501,13 @@ async function addSection() {
 
 async function deleteSection(sectionId) {
     if (!confirm('Eliminar esta seccion y todos sus compases?')) return;
-    await fetch(`${API_BASE}/song-sections/${sectionId}`, { method: 'DELETE' });
+    await apiFetch(`${API_BASE}/song-sections/${sectionId}`, { method: 'DELETE' });
     currentSong.sections = currentSong.sections.filter(s => s.id !== sectionId);
     renderSongSections();
 }
 
 async function addMeasure(sectionId) {
-    const response = await fetch(`${API_BASE}/sections/${sectionId}/measures`, {
+    const response = await apiFetch(`${API_BASE}/sections/${sectionId}/measures`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
@@ -506,7 +524,7 @@ async function addMeasure(sectionId) {
 
 async function deleteMeasure(measureId) {
     if (!confirm('Eliminar este compas?')) return;
-    await fetch(`${API_BASE}/song-measures/${measureId}`, { method: 'DELETE' });
+    await apiFetch(`${API_BASE}/song-measures/${measureId}`, { method: 'DELETE' });
     currentSong.sections.forEach(section => {
         if (section.measures) {
             section.measures = section.measures.filter(m => m.id !== measureId);
@@ -582,7 +600,7 @@ async function applyToMeasure(measureId) {
     
     if (!elementId) { alert('Selecciona un elemento'); return; }
     
-    await fetch(`${API_BASE}/measures/${measureId}/events`, {
+    await apiFetch(`${API_BASE}/measures/${measureId}/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -594,7 +612,7 @@ async function applyToMeasure(measureId) {
         })
     });
     
-    const response = await fetch(`${API_BASE}/songs/${currentSong.id}`);
+    const response = await apiFetch(`${API_BASE}/songs/${currentSong.id}`);
     currentSong = await response.json();
     renderSongSections();
 }
@@ -628,7 +646,7 @@ function pasteMeasure() {
 
 async function pasteEventsToMeasure(measureId, events) {
     for (const event of events) {
-        await fetch(`${API_BASE}/measures/${measureId}/events`, {
+        await apiFetch(`${API_BASE}/measures/${measureId}/events`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -640,7 +658,7 @@ async function pasteEventsToMeasure(measureId, events) {
             })
         });
     }
-    const response = await fetch(`${API_BASE}/songs/${currentSong.id}`);
+    const response = await apiFetch(`${API_BASE}/songs/${currentSong.id}`);
     currentSong = await response.json();
     renderSongSections();
 }
@@ -659,7 +677,7 @@ function renderSongSections() {
         const measuresHtml = (section.measures || []).map(measure => {
             const firstEvent = measure.events && measure.events.length > 0 ? measure.events[0] : null;
             const hasEvent = firstEvent !== null;
-            const chordDisplay = hasEvent ? `${firstEvent.root_note_name}${firstEvent.element_name.charAt(0)}` : '';
+            const chordDisplay = hasEvent ? `${escapeHtml(firstEvent.root_note_name)}${escapeHtml(firstEvent.element_name.charAt(0))}` : '';
             const globalPos = getGlobalMeasurePosition(measure);
             const isSelected = selectedMeasureId === measure.id;
             
@@ -691,11 +709,11 @@ function renderSongSections() {
             </div>`;
         }).join('');
         
-        return `<div class="section-card" style="border-left-color: ${section.color}">
+        return `<div class="section-card" style="border-left-color: ${escapeHtml(section.color)}">
             <div class="section-header">
                 <div class="section-name">
-                    <span class="section-color-dot" style="background: ${section.color}"></span>
-                    ${section.name}
+                    <span class="section-color-dot" style="background: ${escapeHtml(section.color)}"></span>
+                    ${escapeHtml(section.name)}
                 </div>
                 <div class="section-actions">
                     <button class="add-measure-btn" onclick="addMeasure(${section.id})">+ Compas</button>
@@ -779,7 +797,7 @@ function setupPlayerListeners() {
 }
 
 async function loadPlayerSongs() {
-    const response = await fetch(`${API_BASE}/songs`);
+    const response = await apiFetch(`${API_BASE}/songs`);
     const songs = await response.json();
 
     if (songs.length === 0) {
@@ -790,7 +808,7 @@ async function loadPlayerSongs() {
     playerSongListEl.innerHTML = songs.map(song => `
         <div class="player-song-item" onclick="selectPlayerSong(${song.id}, this)">
             <div class="song-info">
-                <span class="song-name">${song.name}</span>
+                <span class="song-name">${escapeHtml(song.name)}</span>
                 <span class="song-meta">${song.bpm} BPM</span>
             </div>
         </div>
@@ -801,7 +819,7 @@ async function selectPlayerSong(songId, el) {
     document.querySelectorAll('.player-song-item').forEach(item => item.classList.remove('selected'));
     if (el) el.classList.add('selected');
 
-    const response = await fetch(`${API_BASE}/songs/${songId}?player=1`);
+    const response = await apiFetch(`${API_BASE}/songs/${songId}?player=1`);
     playerSongData = await response.json();
 
     if (!playerSongData.player_data || playerSongData.player_data.total_measures === 0) {
@@ -818,8 +836,8 @@ function populateStartMeasureSelect(playerData) {
     let html = '';
     playerData.measures.forEach(m => {
         const ev = m.events && m.events.length > 0 ? m.events[0] : null;
-        const label = ev ? `${ev.root_note_name}${ev.element_name.charAt(0)}` : '(vacio)';
-        html += `<option value="${m.global_index}">#${m.global_index + 1} ${m.section_name} - ${label}</option>`;
+        const label = ev ? `${escapeHtml(ev.root_note_name)}${escapeHtml(ev.element_name.charAt(0))}` : '(vacio)';
+        html += `<option value="${m.global_index}">#${m.global_index + 1} ${escapeHtml(m.section_name)} - ${label}</option>`;
     });
     playerStartMeasure.innerHTML = html;
 }
@@ -898,7 +916,7 @@ function exitPlayer() {
 
 async function playFromEditor() {
     if (!currentSong) return;
-    const response = await fetch(`${API_BASE}/songs/${currentSong.id}?player=1`);
+    const response = await apiFetch(`${API_BASE}/songs/${currentSong.id}?player=1`);
     playerSongData = await response.json();
 
     if (!playerSongData.player_data || playerSongData.player_data.total_measures === 0) {
@@ -919,7 +937,7 @@ async function playFromEditor() {
     playerSongListEl.innerHTML = `
         <div class="player-song-item selected">
             <div class="song-info">
-                <span class="song-name">${playerSongData.name}</span>
+                <span class="song-name">${escapeHtml(playerSongData.name)}</span>
                 <span class="song-meta">${playerSongData.bpm} BPM</span>
             </div>
         </div>

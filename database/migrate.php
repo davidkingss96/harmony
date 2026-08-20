@@ -7,11 +7,19 @@ use App\Infrastructure\Database\PdoFactory;
 
 require __DIR__ . '/../api/vendor/autoload.php';
 
+function requireEnv(string $name): string {
+    $value = getenv($name);
+    if ($value === false || $value === '') {
+        throw new \RuntimeException("Missing required environment variable: $name");
+    }
+    return $value;
+}
+
 $pdo = (new PdoFactory(
-    getenv('DB_HOST') ?: 'mysql',
-    getenv('DB_NAME') ?: 'harmony',
-    getenv('DB_USER') ?: 'harmony_user',
-    getenv('DB_PASS') ?: 'harmony_pass',
+    requireEnv('DB_HOST'),
+    requireEnv('DB_NAME'),
+    requireEnv('DB_USER'),
+    requireEnv('DB_PASS'),
 ))->create();
 
 $pdo->exec(

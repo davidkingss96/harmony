@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   php:
     build:
@@ -12,13 +10,9 @@ services:
       - ./api:/var/www/html/api
       - ./frontend:/var/www/html/frontend
       - ./database:/var/www/html/database
-    environment:
-      DB_HOST: mysql
-      DB_NAME: harmony
-      DB_USER: harmony_user
-      DB_PASS: harmony_pass
-      APP_DEBUG: "true"
-    command: sh -c "php database/migrate.php && apache2-foreground"
+    env_file:
+      - .env
+    command: sh -c "cd /var/www/html/api && composer install --no-dev --optimize-autoloader --no-scripts && cd /var/www/html && until php database/migrate.php; do sleep 2; done && apache2-foreground"
     depends_on:
       - mysql
     networks:
@@ -28,12 +22,10 @@ services:
     image: mysql:8.0
     container_name: harmony-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root123
-      MYSQL_DATABASE: harmony
-      MYSQL_USER: harmony_user
-      MYSQL_PASSWORD: harmony_pass
-    ports:
-      - "3306:3306"
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - harmony-mysql-data:/var/lib/mysql
     networks:
@@ -45,9 +37,9 @@ services:
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
-      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
-      - "8081:80"
+      - "127.0.0.1:8081:80"
     depends_on:
       - mysql
     networks:

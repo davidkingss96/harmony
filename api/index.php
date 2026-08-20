@@ -13,6 +13,7 @@ use App\Http\Action\SongMeasuresAction;
 use App\Http\Action\SongSectionsAction;
 use App\Http\Action\SongsAction;
 use App\Http\Action\TuningsAction;
+use App\Http\Middleware\AuthMiddleware;
 use App\Http\Middleware\CorsMiddleware;
 use App\Http\Middleware\JsonErrorHandler;
 use DI\Bridge\Slim\Bridge;
@@ -26,9 +27,10 @@ $container = $builder->build();
 
 $app = Bridge::create($container);
 
-// Middleware (last added runs first: Cors outermost, then routing, then body parsing)
+// Middleware (last added runs first: Cors outermost, then auth, then routing, then body parsing)
 $app->addBodyParsingMiddleware();
 $app->addRoutingMiddleware();
+$app->add(AuthMiddleware::class);
 $app->add(CorsMiddleware::class);
 
 $errorMiddleware = $app->addErrorMiddleware((bool) $container->get('app.debug'), true, true);

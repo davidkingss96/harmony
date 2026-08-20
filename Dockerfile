@@ -19,4 +19,8 @@ WORKDIR /var/www/html
 # Copy Apache configuration
 COPY apache.conf /etc/apache2/sites-available/000-default.conf
 
+# Install PHP dependencies
+COPY api/composer.json /var/www/html/api/composer.json
+RUN cd /var/www/html/api && composer install --no-dev --optimize-autoloader --no-scripts
+
 EXPOSE 80

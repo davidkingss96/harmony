@@ -30,7 +30,7 @@ class SongMap {
                 if (currentSection !== null) html += '</div>';
                 currentSection = m.section_name;
                 html += `<div class="map-section">
-                    <div class="map-section-label" style="color: ${m.section_color}">${m.section_name}</div>
+                    <div class="map-section-label" style="color: ${this._escapeHtml(m.section_color)}">${this._escapeHtml(m.section_name)}</div>
                     <div class="map-measures-row">`;
             }
 
@@ -58,7 +58,14 @@ class SongMap {
         if (!measure.events || measure.events.length === 0) return '';
         const ev = measure.events[0];
         if (!ev.root_note_name || !ev.element_name) return '';
-        return ev.root_note_name + ev.element_name.charAt(0);
+        return this._escapeHtml(ev.root_note_name + ev.element_name.charAt(0));
+    }
+
+    _escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
     updateCursor(index) {

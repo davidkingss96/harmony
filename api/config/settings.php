@@ -8,6 +8,7 @@ use App\Domain\Music\ScaleRepositoryInterface;
 use App\Domain\Music\TuningRepositoryInterface;
 use App\Domain\Session\SessionRepositoryInterface;
 use App\Domain\Song\SongRepositoryInterface;
+use App\Http\Middleware\AuthMiddleware;
 use App\Infrastructure\Database\PdoFactory;
 use App\Infrastructure\Repositories\MySqlCatalogRepository;
 use App\Infrastructure\Repositories\MySqlSessionRepository;
@@ -20,21 +21,32 @@ use function DI\env;
 use function DI\factory;
 use function DI\get;
 
+function requireEnv(string $name): string {
+    $value = getenv($name);
+    if ($value === false || $value === '') {
+        throw new \RuntimeException("Missing required environment variable: $name");
+    }
+    return $value;
+}
+
 return [
     // Application settings
-    'app.debug' => env('APP_DEBUG', false),
+    'app.debug' => filter_var(env('APP_DEBUG', false), FILTER_VALIDATE_BOOLEAN),
 
     // PSR-17 response factory (required by the JSON error handler)
     ResponseFactoryInterface::class => new ResponseFactory(),
 
     // Database connection factory (scalar params bound explicitly)
     PdoFactory::class => autowire()
-        ->constructorParameter('host', env('DB_HOST', 'mysql'))
-        ->constructorParameter('name', env('DB_NAME', 'harmony'))
-        ->constructorParameter('user', env('DB_USER', 'harmony_user'))
-        ->constructorParameter('pass', env('DB_PASS', 'harmony_pass')),
+        ->constructorParameter('host', requireEnv('DB_HOST'))
+        ->constructorParameter('name', requireEnv('DB_NAME'))
+        ->constructorParameter('user', requireEnv('DB_USER'))
+        ->constructorParameter('pass', requireEnv('DB_PASS')),
 
     PDO::class => factory(static fn (PdoFactory $factory): PDO => $factory->create()),
+
+    // Auth middleware
+    AuthMiddleware::class => autowire(),
 
     // Repository bindings (DIP: consumers depend on interfaces)
     NoteRepositoryInterface::class => get(MySqlCatalogRepository::class),

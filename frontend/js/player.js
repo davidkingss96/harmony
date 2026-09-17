@@ -59,9 +59,6 @@ class Player {
             this.timerId = null;
         }
 
-        if (this.state.currentBeat === 1 && this.state.currentMeasureIndex > 0) {
-            this.state.currentMeasureIndex--;
-        }
         this.state.currentBeat = 1;
 
         if (this.onStop) this.onStop(this.state);

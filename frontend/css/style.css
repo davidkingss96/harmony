@@ -175,6 +175,17 @@ button:active {
     transform: scale(0.98);
 }
 
+button.btn-primary {
+    width: auto;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    min-height: auto;
+}
+
+button.btn-secondary {
+    background: var(--text-muted);
+}
+
 /* Session Panel */
 .session-controls {
     display: flex;
@@ -907,11 +918,13 @@ button:active {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: filter 400ms ease, opacity 400ms ease, background 0.15s, border-color 0.15s, transform 0.15s;
     border: 2px solid transparent;
     font-size: 0.65rem;
     color: var(--text-muted);
     position: relative;
+    filter: none;
+    opacity: 1;
 }
 
 .map-measure:hover {
@@ -923,6 +936,18 @@ button:active {
     border-color: #f1c40f;
     background: rgba(241, 196, 15, 0.2);
     box-shadow: 0 0 8px rgba(241, 196, 15, 0.4);
+    filter: none;
+    opacity: 1;
+}
+
+.map-measure.upcoming {
+    filter: blur(3px);
+    opacity: 0.55;
+}
+
+.map-measure.passed {
+    filter: blur(2px);
+    opacity: 0.6;
 }
 
 .map-measure.loop-range {
@@ -991,6 +1016,12 @@ button:active {
     font-size: 1.2rem;
     font-weight: 700;
     color: var(--primary);
+    transition: filter 500ms ease, opacity 500ms ease;
+}
+
+.next-name.blurred {
+    filter: blur(3px);
+    opacity: 0.5;
 }
 
 /* HUD */
@@ -1101,6 +1132,67 @@ button:active {
     border-color: var(--success);
     color: var(--success);
     background: rgba(46, 204, 113, 0.1);
+}
+
+/* Quick Edit Panel */
+.quick-edit-panel {
+    position: fixed;
+    bottom: 80px;
+    right: 16px;
+    background: var(--bg-card);
+    border: 2px solid var(--primary);
+    border-radius: 8px;
+    padding: 14px;
+    min-width: 280px;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.quick-edit-panel.hidden {
+    display: none;
+}
+
+.quick-edit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--text-muted);
+}
+
+.quick-edit-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text);
+}
+
+.quick-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.quick-edit-form select {
+    padding: 8px;
+    background: var(--bg-input);
+    border: 1px solid var(--text-muted);
+    border-radius: 4px;
+    color: var(--text);
+    font-size: 0.9rem;
+}
+
+.quick-edit-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.quick-edit-actions button {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    border-radius: 4px;
 }
 
 /* Performance Mode */

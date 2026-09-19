@@ -35,7 +35,12 @@ class SongMap {
             }
 
             const classes = ['map-measure'];
-            if (index === this.currentMeasureIndex) classes.push('current');
+            if (index === this.currentMeasureIndex) {
+                classes.push('current');
+            } else if (index === this.currentMeasureIndex + 1) {
+                classes.push('upcoming');
+            }
+
             if (this.loopRange && index >= this.loopRange.start && index <= this.loopRange.end) {
                 classes.push('loop-range');
                 if (index === this.loopRange.start) classes.push('loop-start');
@@ -72,13 +77,25 @@ class SongMap {
         this.currentMeasureIndex = index;
 
         const prev = this.container.querySelector('.map-measure.current');
-        if (prev) prev.classList.remove('current');
+        if (prev) {
+            prev.classList.remove('current');
+            prev.classList.add('passed');
+            setTimeout(() => {
+                if (prev) prev.classList.remove('passed');
+            }, 500);
+        }
+
+        const prevUpcoming = this.container.querySelector('.map-measure.upcoming');
+        if (prevUpcoming) prevUpcoming.classList.remove('upcoming');
 
         const next = this.container.querySelector(`.map-measure[data-index="${index}"]`);
         if (next) {
             next.classList.add('current');
             next.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         }
+
+        const nextUpcoming = this.container.querySelector(`.map-measure[data-index="${index + 1}"]`);
+        if (nextUpcoming) nextUpcoming.classList.add('upcoming');
     }
 
     setLoopRange(start, end) {

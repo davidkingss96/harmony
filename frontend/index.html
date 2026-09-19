@@ -212,7 +212,28 @@
                     <button id="playerPauseBtn" class="player-ctrl-btn">⏸</button>
                     <button id="playerLoopBtn" class="player-ctrl-btn">🔁</button>
                     <button id="playerPerformanceBtn" class="player-ctrl-btn">⛶</button>
+                    <button id="playerQuickEditBtn" class="player-ctrl-btn" title="Editar compás">✎</button>
                     <button id="playerBackBtn" class="player-ctrl-btn">← Salir</button>
+                </section>
+
+                <!-- Quick Edit Panel -->
+                <section id="quickEditPanel" class="quick-edit-panel hidden">
+                    <div class="quick-edit-header">
+                        <h3>Editar Compás</h3>
+                        <button id="quickEditCloseBtn" class="icon-btn">✕</button>
+                    </div>
+                    <div class="quick-edit-form">
+                        <select id="quickEditType">
+                            <option value="CHORD">Acorde</option>
+                            <option value="SCALE">Escala</option>
+                        </select>
+                        <select id="quickEditRef"></select>
+                        <select id="quickEditRoot"></select>
+                    </div>
+                    <div class="quick-edit-actions">
+                        <button id="quickEditApplyCurrent" class="btn-small">Ahora</button>
+                        <button id="quickEditApplyNext" class="btn-primary">Siguiente</button>
+                    </div>
                 </section>
             </div>
         </div>

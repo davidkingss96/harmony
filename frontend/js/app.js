@@ -71,6 +71,16 @@ const pasteBtn = document.getElementById('pasteBtn');
 const sectionsContainer = document.getElementById('sectionsContainer');
 const addSectionBtn = document.getElementById('addSectionBtn');
 
+// Player Quick Edit
+const quickEditPanel = document.getElementById('quickEditPanel');
+const playerQuickEditBtn = document.getElementById('playerQuickEditBtn');
+const quickEditCloseBtn = document.getElementById('quickEditCloseBtn');
+const quickEditType = document.getElementById('quickEditType');
+const quickEditRef = document.getElementById('quickEditRef');
+const quickEditRoot = document.getElementById('quickEditRoot');
+const quickEditApplyCurrent = document.getElementById('quickEditApplyCurrent');
+const quickEditApplyNext = document.getElementById('quickEditApplyNext');
+
 // Tab navigation
 const tabBtns = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');
@@ -207,6 +217,31 @@ function setupEventListeners() {
         const response = await apiFetch(`${API_BASE}/${endpoint}`);
         const data = await response.json();
         updateSongElementRef(type, data);
+    });
+
+    // Player Quick Edit
+    playerQuickEditBtn.addEventListener('click', () => {
+        quickEditPanel.classList.toggle('hidden');
+    });
+
+    quickEditCloseBtn.addEventListener('click', () => {
+        quickEditPanel.classList.add('hidden');
+    });
+
+    quickEditType.addEventListener('change', async () => {
+        const type = quickEditType.value;
+        const endpoint = type === 'CHORD' ? 'chords' : 'scales';
+        const response = await apiFetch(`${API_BASE}/${endpoint}`);
+        const data = await response.json();
+        updateQuickEditRef(type, data);
+    });
+
+    quickEditApplyCurrent.addEventListener('click', () => {
+        applyQuickEdit('current');
+    });
+
+    quickEditApplyNext.addEventListener('click', () => {
+        applyQuickEdit('next');
     });
 }
 
@@ -859,6 +894,11 @@ function startPlayer() {
 
     updatePlayerHud(player.state.currentMeasureIndex, player.state.currentBeat);
 
+    // Ensure Quick Edit catalogs are loaded before playing
+    if (chordsCatalog.length === 0) {
+        populateQuickEditSelects().catch(console.error);
+    }
+
     const startIndex = parseInt(playerStartMeasure.value) || 0;
     player.play(startIndex);
 }
@@ -944,6 +984,17 @@ async function playFromEditor() {
     `;
 }
 
+function renderCurrentChord(measureIndex) {
+    const measure = player.song?.measures?.[measureIndex];
+    if (!measure || !measure.events || measure.events.length === 0) return;
+
+    const event = measure.events[0];
+    if (event && event.heatmap && event.heatmap.length > 0) {
+        const containerWidth = playerFretboard.parentElement.clientWidth - 16;
+        renderFretboardInContainer(playerFretboard, event.heatmap, false, containerWidth);
+    }
+}
+
 function onPlayerTick(data) {
     updateBeatDots(data.currentBeat, data.beatsTotal);
     hudBeatsRemaining.textContent = `${data.beatsRemaining} beat${data.beatsRemaining !== 1 ? 's' : ''}`;
@@ -957,15 +1008,16 @@ function onPlayerMeasureChange(index) {
     const nextEvent = player.getNextEvent();
 
     // Render fretboard with current heatmap
-    if (event && event.heatmap && event.heatmap.length > 0) {
-        const containerWidth = playerFretboard.parentElement.clientWidth - 16;
-        renderFretboardInContainer(playerFretboard, event.heatmap, false, containerWidth);
-    }
+    renderCurrentChord(index);
 
-    // Update next chord indicator
+    // Update next chord indicator with blur effect
     if (nextEvent && nextEvent.root_note_name && nextEvent.element_name) {
+        nextChordName.classList.add('blurred');
         nextChordName.textContent = `${nextEvent.root_note_name} ${nextEvent.element_name}`;
         playerNextChord.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            nextChordName.classList.remove('blurred');
+        });
     } else {
         playerNextChord.classList.add('hidden');
     }
@@ -1014,5 +1066,131 @@ function updateBeatDots(currentBeat, totalBeats) {
     hudBeatDots.innerHTML = html;
 }
 
+// ============================================
+// PLAYER - QUICK EDIT
+// ============================================
+
+let chordsCatalog = [];
+let scalesCatalog = [];
+let notesCatalog = [];
+
+async function populateQuickEditSelects() {
+    const chordsResponse = await apiFetch(`${API_BASE}/chords`);
+    chordsCatalog = await chordsResponse.json();
+
+    const scalesResponse = await apiFetch(`${API_BASE}/scales`);
+    scalesCatalog = await scalesResponse.json();
+
+    const notesResponse = await apiFetch(`${API_BASE}/notes`);
+    notesCatalog = await notesResponse.json();
+
+    // Initialize with current type (CHORD by default)
+    updateQuickEditRef('CHORD', chordsCatalog);
+    updateQuickEditRoot(notesCatalog);
+}
+
+function updateQuickEditRef(type, data) {
+    quickEditRef.innerHTML = data.map(item =>
+        `<option value="${item.id}">${escapeHtml(item.name)}</option>`
+    ).join('');
+}
+
+function updateQuickEditRoot(notes) {
+    quickEditRoot.innerHTML = notes.map(n =>
+        `<option value="${n.chromatic_position}">${escapeHtml(n.name)}</option>`
+    ).join('');
+}
+
+async function applyQuickEdit(target) {
+    if (!player.song) return;
+
+    const measureIndex = target === 'current'
+        ? player.state.currentMeasureIndex
+        : player.state.currentMeasureIndex + 1;
+
+    if (measureIndex >= player.song.measures.length) {
+        alert('No hay siguiente compás');
+        return;
+    }
+
+    const type = quickEditType.value;
+    const referenceId = parseInt(quickEditRef.value);
+    const rootNote = parseInt(quickEditRoot.value);
+
+    if (!referenceId || isNaN(rootNote)) {
+        alert('Selecciona tipo, referencia y nota raíz');
+        return;
+    }
+
+    // Find element name from catalog
+    const catalog = type === 'CHORD' ? chordsCatalog : scalesCatalog;
+    const elementObj = catalog.find(c => c.id === referenceId);
+    const elementName = elementObj?.name || 'Unknown';
+
+    // Find note name from catalog
+    const noteObj = notesCatalog.find(n => n.chromatic_position === rootNote);
+    const rootNoteName = noteObj?.name || 'C';
+
+    // Call API to get heatmap (reuse backend logic, don't duplicate)
+    try {
+        const heatmapResponse = await apiFetch(`${API_BASE}/harmony`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                tuning_id: playerSongData.tuning_id || 1,
+                items: [{
+                    type,
+                    reference_id: referenceId,
+                    root_note: rootNote
+                }]
+            })
+        });
+
+        const heatmapData = await heatmapResponse.json();
+        if (heatmapData.error) {
+            alert('Error: ' + heatmapData.error);
+            return;
+        }
+
+        // Mutate the measure in memory
+        const measure = player.song.measures[measureIndex];
+        measure.events = [{
+            beat: 1,
+            element_type: type,
+            element_name: elementName,
+            root_note_name: rootNoteName,
+            root_note: rootNote,
+            notes: '',
+            heatmap: heatmapData.heatmap,
+            influence: heatmapData.influence
+        }];
+
+        // Update UI based on target
+        if (target === 'current') {
+            renderCurrentChord(measureIndex);
+        } else {
+            // target === 'next'
+            const nextEvent = measure.events[0];
+            nextChordName.classList.add('blurred');
+            nextChordName.textContent = `${nextEvent.root_note_name} ${nextEvent.element_name}`;
+            requestAnimationFrame(() => {
+                nextChordName.classList.remove('blurred');
+            });
+        }
+    } catch (err) {
+        console.error('Quick Edit error:', err);
+        alert('Error al aplicar cambio');
+    }
+}
+
 // Init player listeners
 setupPlayerListeners();
+
+// Populate Quick Edit selects once catalogs are loaded
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', populateQuickEditSelects);
+    } else {
+        populateQuickEditSelects().catch(console.error);
+    }
+});
